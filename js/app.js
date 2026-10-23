@@ -10,8 +10,10 @@ const $ = (id) => document.getElementById(id);
 const ui = {
   test: $("test"), results: $("results"), box: $("typing-box"), words: $("words"),
   caret: $("caret"), ghost: $("ghost"), input: $("hidden-input"), timer: $("timer"),
-  liveWpm: $("live-wpm"), combo: $("combo"), comboN: $("combo-n"), pbHint: $("pb-hint"),
+  liveWpm: $("live-wpm"), combo: $("combo"), comboN: $("combo-n"), pbHint: $("pb-hint"), hint: $("hint"),
 };
+const TEST_HINT = ui.hint.innerHTML;
+const REVIEW_HINT = "Your finished run · <kbd>Esc</kbd> back to results · <kbd>Tab</kbd>+<kbd>Enter</kbd> restart";
 
 let test = null;
 let wordEls = [];
@@ -22,6 +24,8 @@ let frame = 0;
 let caretY = -1;
 let resultsShownAt = 0;
 const RESULTS_KEY_GUARD_MS = 500; // keys still in flight when time runs out must not skip the results
+let tabAt = -Infinity;
+const TAB_ENTER_MS = 1000; // Enter this soon after Tab (or while holding it) restarts, skipping the guard
 
 const settings = () => store.settings();
 const currentKey = () => modeKey(settings().source, settings().duration);
@@ -161,6 +165,9 @@ function newTest() {
   ui.pbHint.textContent = best ? `Best ${Math.round(best.wpm)} wpm` : "";
   ui.results.hidden = true;
   ui.test.hidden = false;
+  ui.test.classList.remove("reviewing");
+  ui.hint.innerHTML = TEST_HINT;
+  tabAt = -Infinity;
   placeCaret();
   focusBox();
 }
@@ -231,10 +238,13 @@ function showResults() {
   $("r-wpm").textContent = Math.round(s.wpm);
   $("r-gross").textContent = Math.round(s.gross);
   $("r-acc").textContent = `${Math.round(s.accuracy)}%`;
-  $("r-errors").textContent = s.chars.errors;
+  $("r-duration").textContent = `${Math.round(s.elapsed / 1000)}s`;
   $("r-combo").textContent = s.maxCombo;
   const c = s.chars;
-  $("r-chars").textContent = `${c.correct}/${c.incorrect}/${c.extra}/${c.missed}`;
+  $("r-correct").textContent = c.correct;
+  $("r-incorrect").textContent = c.incorrect;
+  $("r-extra").textContent = c.extra;
+  $("r-missed").textContent = c.missed;
 
   const badge = $("r-badge");
   badge.hidden = false;
@@ -250,15 +260,16 @@ function showResults() {
     badge.classList.add("quiet");
   }
 
-  ui.test.hidden = true;
-  ui.results.hidden = false;
+  ui.box.classList.remove("running");
+  showResultsView();
   resultsShownAt = performance.now();
   // Charts need the results view laid out to measure their width.
   requestAnimationFrame(() => {
     lineChart($("r-chart"), test.samples.map((p) => ({
       x: p.second,
       y: p.wpm,
-      label: `${p.second}s · ${Math.round(p.wpm)} net · ${Math.round(p.gross)} gross${p.errors ? ` · ${p.errors} error${p.errors > 1 ? "s" : ""}` : ""}`,
+      marks: p.errors,
+      label: `${p.second}s · ${Math.round(p.wpm)} net · ${Math.round(p.gross)} raw${p.errors ? ` · ${p.errors} mistake${p.errors > 1 ? "s" : ""}` : ""}`,
     })), { xLabel: "s" });
     const recent = store.runs(currentKey()).slice(-20);
     $("r-history-title").textContent = `Your last ${recent.length} tests (${set.duration}s, ${SOURCES[set.source].label.toLowerCase()})`;
@@ -273,12 +284,28 @@ function showResults() {
     const css = getComputedStyle(document.documentElement);
     confetti(["--accent", "--good", "--error", "--ink-soft"].map((v) => css.getPropertyValue(v).trim()));
   }
+}
+
+function showResultsView() {
+  ui.test.hidden = true;
+  ui.test.classList.remove("reviewing");
+  ui.results.hidden = false;
   $("again").focus({ preventScroll: true });
+}
+
+// Back to the finished text, keeping the results one Esc away.
+function showReview() {
+  ui.results.hidden = true;
+  ui.test.hidden = false;
+  ui.test.classList.add("reviewing");
+  ui.hint.innerHTML = REVIEW_HINT;
+  placeCaret(); // re-measures the scroll now the text is laid out again
 }
 
 // ---------- Input ----------
 
 const anyDialogOpen = () => document.querySelector("dialog[open]") !== null;
+const finished = () => test.status === "done";
 
 document.addEventListener("keydown", (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key === ",") {
@@ -287,17 +314,33 @@ document.addEventListener("keydown", (e) => {
     return;
   }
   if (anyDialogOpen()) return;
-  if (e.key === "Tab" || e.key === "Escape") {
+  const now = performance.now();
+  if (e.key === "Enter" && now - tabAt < TAB_ENTER_MS) {
     e.preventDefault();
-    if (ui.results.hidden || performance.now() - resultsShownAt > RESULTS_KEY_GUARD_MS) newTest();
+    newTest();
+    return;
+  }
+  if (e.key === "Tab") {
+    e.preventDefault();
+    // Mid-test Tab alone restarts; once finished it waits for Enter, so the results can't be lost by accident.
+    if (finished()) tabAt = now;
+    else newTest();
+    return;
+  }
+  if (e.key === "Escape") {
+    e.preventDefault();
+    if (!finished()) newTest();
+    else if (ui.results.hidden) showResultsView();
+    else showReview();
     return;
   }
   if (!ui.results.hidden) {
     // Swallow typing so a stray Space can't press the focused "Next test" button.
     if (e.key === "Enter" || e.key.length === 1) e.preventDefault();
-    if (e.key === "Enter" && performance.now() - resultsShownAt > RESULTS_KEY_GUARD_MS) newTest();
+    if (e.key === "Enter" && now - resultsShownAt > RESULTS_KEY_GUARD_MS) newTest();
     return;
   }
+  if (finished()) return; // reviewing a finished run: nothing to type
   if (e.metaKey || (e.ctrlKey && e.key !== "Backspace")) return;
   if (e.key === "Backspace") {
     e.preventDefault();

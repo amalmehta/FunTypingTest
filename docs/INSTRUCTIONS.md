@@ -36,7 +36,8 @@ It types a 15-second test at 120 WPM and prints frame times, key latency and car
 
 - **Start**: just type. The clock starts on your first letter.
 - **Pick a mode**: 15s / 30s / 60s, and *Words* (the 100 most common English words) or *Silly sentences*. Each combination has its own personal best.
-- **Restart**: `Tab` or `Esc`. From results, `Enter` starts the next test.
+- **Restart**: `Tab` or `Esc` mid-test. When a test is done, `Tab`+`Enter` (or the Restart button, or `Enter` alone) starts the next one.
+- **Results**: net WPM, accuracy, raw WPM, character counts, duration, and WPM per second with red dots where you made mistakes. `Esc` flips between the results and your finished text.
 - **Fix mistakes**: `Backspace`; you can go back into the previous word only if it has a mistake. `⌥⌫` (Ctrl+Backspace) clears the word.
 - **Settings**: the gear, or `⌘,` / `Ctrl+,`. Theme, smooth caret, live WPM, combo counter, ghost pacer, key sounds, confetti, clear history.
 - **How the score works**: "How is WPM calculated?" at the bottom.

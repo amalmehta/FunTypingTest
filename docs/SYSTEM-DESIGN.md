@@ -30,7 +30,7 @@ flowchart LR
 1. **Start.** The page loads, applies the saved theme before first paint (inline script in `index.html`), builds the first 60 words, and puts the caret on the first letter. Nothing is timed yet.
 2. **Type.** Each `keydown` goes to `TypingTest.type()` or `.backspace()`. The engine starts the clock on the first letter. The UI repaints only the current word (and the previous one when a word is committed or reopened), then moves the caret with a CSS transform. The engine keeps at least 60 words ahead; new ones are appended to the DOM in one fragment.
 3. **Frame loop.** While running, `requestAnimationFrame` calls `tick()`, which records one sample per whole second and ends the test at exactly the chosen duration. The timer text changes once a second, live WPM every 500 ms, the ghost every 250 ms.
-4. **Results.** For 500 ms after results appear, Enter/Tab/Esc are ignored and stray letters are swallowed, so keys still in flight can't skip them. The run is saved, the previous best is compared, the badge shows "New best! +N" or the gap, and both charts render on the next frame (they need the layout to measure width).
+4. **Results.** For 500 ms after results appear, Enter alone is ignored and stray letters are swallowed, so keys still in flight can't skip them. Tab alone no longer restarts a finished test; Tab then Enter within 1 s restarts at once. Esc toggles between the results and the finished text (the `reviewing` class hides the caret) without recomputing anything. The run is saved, the previous best is compared, the badge shows "New best! +N" or the gap, and both charts render on the next frame (they need the layout to measure width).
 
 ## Definitions (how the numbers are computed)
 

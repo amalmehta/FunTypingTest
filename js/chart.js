@@ -7,7 +7,8 @@ const el = (name, attrs = {}) => {
   return node;
 };
 
-// points: [{ x, y, label }]; label is the tooltip text for that point.
+// points: [{ x, y, label, marks }]; label is the tooltip text for that point,
+// marks (optional) draws an error dot on the line there, larger for more errors.
 export function lineChart(host, points, { height = 140, yLabel = "WPM", xLabel = "" } = {}) {
   host.replaceChildren();
   if (points.length < 2) {
@@ -41,6 +42,9 @@ export function lineChart(host, points, { height = 140, yLabel = "WPM", xLabel =
   }
   const d = points.map((p, i) => `${i ? "L" : "M"}${sx(p.x).toFixed(1)},${sy(p.y).toFixed(1)}`).join("");
   svg.append(el("path", { d, class: "line" }));
+  for (const p of points) {
+    if (p.marks) svg.append(el("circle", { cx: sx(p.x), cy: sy(p.y), r: 2.5 + Math.min(p.marks, 4) * 0.75, class: "err" }));
+  }
   const cross = el("line", { y1: pad.top, y2: pad.top + innerH, class: "cross", visibility: "hidden" });
   const dot = el("circle", { r: 4.5, class: "dot", visibility: "hidden" });
   svg.append(cross, dot);

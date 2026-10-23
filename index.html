@@ -65,21 +65,23 @@
           <div class="big">
             <span id="r-wpm" class="big-num">0</span><span class="big-unit">net wpm</span>
           </div>
-          <p class="sub-stats"><span><b id="r-gross"></b> gross wpm</span><span><b id="r-acc"></b> accuracy</span></p>
+          <p class="sub-stats"><span><b id="r-acc"></b> accuracy</span><span title="Gross WPM: every typed character, mistakes included"><b id="r-gross"></b> raw wpm</span></p>
         </div>
         <div id="r-badge" class="badge" hidden></div>
       </div>
       <dl class="facts">
-        <div><dt title="wrong, extra and skipped letters left in the text">Uncorrected errors</dt><dd id="r-errors"></dd></div>
+        <div><dt>Duration</dt><dd id="r-duration"></dd></div>
         <div><dt>Best combo</dt><dd id="r-combo"></dd></div>
-        <div><dt title="correct / incorrect / extra / missed">Characters</dt><dd id="r-chars"></dd></div>
+        <div class="chars"><dt title="Incorrect, extra and missed characters are the uncorrected errors that lower net WPM">Characters</dt>
+          <dd><span class="cc ok"><b id="r-correct"></b> correct</span><span class="cc bad"><b id="r-incorrect"></b> incorrect</span><span class="cc bad"><b id="r-extra"></b> extra</span><span class="cc"><b id="r-missed"></b> missed</span></dd></div>
       </dl>
-      <h2 class="chart-title">Net WPM during this test</h2>
+      <h2 class="chart-title">Net WPM each second <span class="legend"><i class="err-dot" aria-hidden="true"></i>mistakes that second</span></h2>
       <div id="r-chart" class="chart"></div>
       <h2 class="chart-title" id="r-history-title">Your recent tests</h2>
       <div id="r-history" class="chart"></div>
       <div class="actions">
-        <button id="again" class="primary">Next test <kbd>Enter</kbd></button>
+        <span class="note"><kbd>Esc</kbd> see your text</span>
+        <button id="again" class="primary">Restart <kbd>Tab</kbd>+<kbd>Enter</kbd></button>
       </div>
     </section>
   </main>
@@ -144,7 +146,7 @@
         (<a href="https://en.wikipedia.org/wiki/Words_per_minute" target="_blank" rel="noopener">Wikipedia: Words per minute</a>).
         So WPM counts characters, not actual words, which keeps short and long words fair.</p>
 
-      <h3>1. Gross WPM</h3>
+      <h3>1. Raw (gross) WPM</h3>
       <math display="block"><mrow><mi>Gross</mi><mo>=</mo><mfrac><mrow><msub><mi>C</mi><mi>t</mi></msub><mo>/</mo><mn>5</mn></mrow><mi>m</mi></mfrac></mrow></math>
       <ul class="symbols">
         <li><math><msub><mi>C</mi><mi>t</mi></msub></math> — every character in what you typed, right or wrong, including spaces</li>
