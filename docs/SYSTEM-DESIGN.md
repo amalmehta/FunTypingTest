@@ -1,0 +1,94 @@
+# System Design
+
+Fun Typing Test is a static website: plain HTML, CSS and JavaScript modules, no build step, no backend, no dependencies. Everything runs in the browser and is saved in `localStorage`.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  K[Keyboard / on-screen keyboard] --> A[app.js<br/>UI + input]
+  A -->|type / backspace / tick| E[engine.js<br/>TypingTest state machine]
+  E --> S[stats.js<br/>pure formulas]
+  W[words.js<br/>text sources] --> E
+  A --> C[chart.js<br/>SVG line charts]
+  A --> FX[effects.js<br/>sounds + confetti, opt-in]
+  A <--> ST[storage.js<br/>localStorage]
+```
+
+| Component | Job | Talks to |
+|---|---|---|
+| `js/app.js` | Reads keys, paints only the words that changed, moves the caret and ghost, runs the frame loop, shows results, wires settings and feedback dialogs | everything |
+| `js/engine.js` | `TypingTest`: holds target words, what was typed, the clock, keystroke counts, combo, per-second samples. No DOM, so it is unit-tested in Node | `stats.js` |
+| `js/stats.js` | Pure functions: character counts, WPM, accuracy, pacer position | — |
+| `js/words.js` | Endless word streams: common words (cited) and silly sentences (original) | — |
+| `js/storage.js` | Settings, run history (last 500), personal bests per mode, saved feedback. Writes are batched 300 ms after the last change | `localStorage` |
+| `js/chart.js` | Single-series SVG line chart with hover crosshair + tooltip | — |
+| `js/effects.js` | Web Audio key ticks and canvas confetti, both off by default and confetti respects reduced motion | — |
+
+## Main flows
+
+1. **Start.** The page loads, applies the saved theme before first paint (inline script in `index.html`), builds the first 60 words, and puts the caret on the first letter. Nothing is timed yet.
+2. **Type.** Each `keydown` goes to `TypingTest.type()` or `.backspace()`. The engine starts the clock on the first letter. The UI repaints only the current word (and the previous one when a word is committed or reopened), then moves the caret with a CSS transform. The engine keeps at least 60 words ahead; new ones are appended to the DOM in one fragment.
+3. **Frame loop.** While running, `requestAnimationFrame` calls `tick()`, which records one sample per whole second and ends the test at exactly the chosen duration. The timer text changes once a second, live WPM every 500 ms, the ghost every 250 ms.
+4. **Results.** The run is saved, the previous best is compared, the badge shows "New best! +N" or the gap, and both charts render on the next frame (they need the layout to measure width).
+
+## Definitions (how the numbers are computed)
+
+A “word” is 5 characters including spaces ([Wikipedia: Words per minute](https://en.wikipedia.org/wiki/Words_per_minute)). The other rules are this app's conventions (labeled as such in the UI):
+
+$$\text{WPM} = \frac{C_s / 5}{t / 60}$$
+
+- $C_s$ — scored characters: letters of each word typed exactly right plus one space after it, plus the word in progress if it is a correct prefix
+- $t$ — seconds since the first keystroke (equal to the test duration at the end)
+
+Only correct words count, so mistakes left behind cost speed.
+
+$$\text{Raw} = \frac{C_t / 5}{t / 60}$$
+
+- $C_t$ — all characters typed and kept, right or wrong, including spaces
+
+$$\text{Accuracy} = \frac{K_c}{K_c + K_i} \times 100\%$$
+
+- $K_c$ — correct keystrokes; a space is correct when the word before it is exactly right
+- $K_i$ — incorrect keystrokes, including ones later fixed with Backspace
+
+Other rules:
+
+- **Combo**: consecutive correct keystrokes; any incorrect keystroke resets it. Shown from 10 upward; pulses every 25.
+- **Personal best**: highest WPM per mode (text source × duration), only if above 0.
+- **Ghost pacer**: a dot at character position $\lfloor \text{PB} \cdot 5 \cdot t / 60 \rfloor$, i.e. your best run assumed to be typed at an even pace (an assumption).
+- **Backspace** returns to the previous word only if it has a mistake. `⌥⌫`/`Ctrl⌫` clears a word. Up to 10 extra letters per word are accepted.
+
+## Key decisions and trade-offs
+
+| Decision | Why | Trade-off |
+|---|---|---|
+| Static site, no framework, no build | Smallest thing that holds; instant load; nothing to update | Hand-written DOM code in `app.js` |
+| `localStorage` only | One person, one browser (the stated audience); private by default | No sync across devices; clearing site data loses history |
+| Engine separated from DOM | Scoring is the behavior that matters, so it is unit-tested without a browser | Two places to touch when adding a rule |
+| Repaint only touched words; caret moves by `transform` | Keystrokes stay ~1–2 ms (measured), no layout thrash | Slightly more bookkeeping |
+| Native MathML for the formula dialog | No KaTeX download, works offline, renders in all current browsers | Slightly plainer typography than KaTeX |
+| Feedback saved locally + copy + `mailto:` draft with no recipient | No backend, nothing leaves the browser unless the user sends it | Feedback doesn't reach the maker automatically |
+| Calm by default (sounds, confetti off) | User asked for calm with optional juice | The fun has to come from the results screen and records |
+| `keydown`-based input | Precise, simple, works on desktop and iOS | Android keyboards report key code 229, so typing there is unreliable (deferred) |
+
+## Testing
+
+- `npm test` runs `node --test` over `tests/`: scoring formulas, clock start/stop, combo, backspace rules, extra-letter cap, word supply, word streams.
+- Manual: [MANUAL-REVIEW.md](MANUAL-REVIEW.md) covers feel, smoothness, dark mode and devices.
+- Profiled in the browser: 254 scripted keystrokes at 200 WPM, keystroke handler max 1.9 ms, average 1.1 ms.
+
+## Scale and what would change
+
+Today: one person, one browser, a few hundred runs. Storage is a single JSON blob under 100 KB (500 runs cap).
+
+- **Sync across devices / accounts**: replace `storage.js` with an API-backed module (same interface: `settings`, `addRun`, `runs`, `best`). Needs auth and a small database; only worth it if people ask for it.
+- **Public leaderboards**: needs a server, anti-cheat (bots can dispatch key events, as the tests here do), and moderation. Not planned.
+- **Thousands of runs**: the history filter is a linear scan; move to IndexedDB with an index on mode if the cap is raised past ~10,000.
+
+## Known limits
+
+- Android on-screen keyboards: unreliable key detection (see above).
+- Browser shortcuts: some browsers keep `⌘,` for their own settings; the gear button always works.
+- The caret glides with a 90 ms transition; very fast typists (>130 WPM) may see it trail by a letter. Turn off "Smooth caret" in Settings if so.
+- Stats are per browser; private windows don't keep them.

@@ -1,0 +1,34 @@
+# Manual Review Checklist
+
+What the unit tests can't check. Do these in a real browser window (not a background tab).
+
+## Feel and smoothness
+- [ ] Type a 30s test at your normal speed: every letter colors instantly, no stutter, no flicker.
+- [ ] The caret glides and keeps up with you. If it trails, turn off "Smooth caret" and compare.
+- [ ] The text scrolls up one line at a time, without jumping, when you reach the third line.
+- [ ] Results appear with a short fade; no layout jump when the charts draw.
+- [ ] Hover the charts: the crosshair and tooltip follow the pointer smoothly.
+- [ ] Switching 15/30/60 and Words/Silly restarts instantly.
+- [ ] Chrome DevTools > Performance: record a test; no long tasks (>50 ms) while typing.
+
+## Fun
+- [ ] Beating your best shows "New best! +N wpm"; missing it shows the gap kindly.
+- [ ] With Ghost pacer on and a best saved, the grey dot moves at your best pace.
+- [ ] Combo counter appears at 10 and pulses at 25, 50, 75…
+- [ ] Settings > Key sounds: ticks are quiet and pleasant; mistakes sound different.
+- [ ] Settings > Confetti: shows on a new best only; nothing if your OS has Reduce Motion on.
+- [ ] Silly sentences are fun to type.
+
+## Looks (check in both light and dark)
+- [ ] Main screen, results, Settings, Feedback, "How is WPM calculated?" all readable in light and dark.
+- [ ] Error letters (red) clearly differ from untyped (grey) and correct (ink) letters.
+- [ ] Equations in the formula dialog are typeset (fractions, subscripts), readable in dark mode and on a phone.
+- [ ] Icon shows in the browser tab and when added to a phone home screen.
+
+## Keyboard and devices
+- [ ] Tab and Esc restart; Enter starts the next test from results.
+- [ ] ⌘, (or Ctrl+,) opens Settings, or the browser takes it; the gear always works.
+- [ ] ⌥⌫ clears the current word.
+- [ ] iPhone Safari: tapping the text brings up the keyboard and typing works.
+- [ ] Android Chrome: try it; known to be unreliable (deferred).
+- [ ] Reload the page: settings, bests and history are kept.

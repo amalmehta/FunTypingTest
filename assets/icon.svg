@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A keycap with a lightning bolt: typing, fast. -->
+  <rect x="4" y="6" width="56" height="54" rx="14" fill="#A8462A"/>
+  <rect x="4" y="4" width="56" height="50" rx="14" fill="#D9663F"/>
+  <rect x="11" y="9" width="42" height="38" rx="9" fill="#E8805A"/>
+  <path d="M35 13 L22 32 H31 L28 44 L42 24 H33 Z" fill="#FBF7F0"/>
+</svg>

@@ -1,0 +1,10 @@
+{
+  "name": "funtypingtest",
+  "private": true,
+  "type": "module",
+  "description": "Fun Typing Test: a calm, genuinely fun solo typing speed test.",
+  "scripts": {
+    "start": "python3 -m http.server 5173",
+    "test": "node --test"
+  }
+}

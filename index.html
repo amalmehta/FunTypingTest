@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fun Typing Test</title>
+  <meta name="description" content="A calm, genuinely fun solo typing speed test. Beat your best.">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#FBF7F0" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1E1A16" media="(prefers-color-scheme: dark)">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    // Apply the saved theme before first paint so there is no flash.
+    try {
+      const t = JSON.parse(localStorage.getItem("funTypingTest.v1"))?.settings?.theme;
+      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="./" aria-label="Fun Typing Test home">
+      <img src="assets/icon.svg" alt="" width="28" height="28">
+      <span>Fun Typing Test</span>
+    </a>
+    <nav class="modes" aria-label="Test options">
+      <div class="seg" role="radiogroup" aria-label="Duration" id="durations">
+        <button role="radio" data-duration="15">15s</button>
+        <button role="radio" data-duration="30">30s</button>
+        <button role="radio" data-duration="60">60s</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Text" id="sources">
+        <button role="radio" data-source="words">Words</button>
+        <button role="radio" data-source="silly">Silly sentences</button>
+      </div>
+    </nav>
+    <button class="icon-btn" id="open-settings" title="Settings (⌘,)" aria-label="Settings">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4L10.6 6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <section id="test" class="view">
+      <div class="live" aria-live="off">
+        <span id="timer" class="timer">30</span>
+        <span id="live-wpm" class="live-stat"></span>
+        <span id="combo" class="combo" hidden><span class="bolt" aria-hidden="true">⚡</span><span id="combo-n">0</span> combo</span>
+        <span id="pb-hint" class="pb-hint"></span>
+      </div>
+      <div id="typing-box" class="typing-box" tabindex="0" aria-label="Typing area. Start typing to begin.">
+        <div id="words" class="words"></div>
+        <div id="caret" class="caret"></div>
+        <div id="ghost" class="ghost" hidden title="Your personal best pace"></div>
+        <input id="hidden-input" class="hidden-input" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false" aria-hidden="true" tabindex="-1">
+      </div>
+      <p class="hint" id="hint">Start typing to begin · <kbd>Tab</kbd> restart</p>
+    </section>
+
+    <section id="results" class="view" hidden>
+      <div class="result-head">
+        <div class="big">
+          <span id="r-wpm" class="big-num">0</span><span class="big-unit">wpm</span>
+        </div>
+        <div id="r-badge" class="badge" hidden></div>
+      </div>
+      <dl class="facts">
+        <div><dt>Accuracy</dt><dd id="r-acc"></dd></div>
+        <div><dt>Raw</dt><dd id="r-raw"></dd></div>
+        <div><dt>Best combo</dt><dd id="r-combo"></dd></div>
+        <div><dt title="correct / incorrect / extra / missed">Characters</dt><dd id="r-chars"></dd></div>
+      </dl>
+      <h2 class="chart-title">WPM during this test</h2>
+      <div id="r-chart" class="chart"></div>
+      <h2 class="chart-title" id="r-history-title">Your recent tests</h2>
+      <div id="r-history" class="chart"></div>
+      <div class="actions">
+        <button id="again" class="primary">Next test <kbd>Enter</kbd></button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <button class="link" id="open-math">How is WPM calculated?</button>
+  </footer>
+
+  <button class="feedback-tab" id="open-feedback">Feedback</button>
+
+  <dialog id="settings" aria-labelledby="settings-title">
+    <form method="dialog" class="sheet">
+      <header><h2 id="settings-title">Settings</h2><button class="icon-btn close" value="close" aria-label="Close">✕</button></header>
+      <fieldset>
+        <legend>Appearance</legend>
+        <label class="row">Theme
+          <select data-setting="theme">
+            <option value="system">Match system</option>
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+          </select>
+        </label>
+        <label class="row">Smooth caret <input type="checkbox" data-setting="smoothCaret"></label>
+      </fieldset>
+      <fieldset>
+        <legend>While typing</legend>
+        <label class="row">Show live WPM <input type="checkbox" data-setting="liveWpm"></label>
+        <label class="row">Show combo counter <input type="checkbox" data-setting="combo"></label>
+        <label class="row"><span>Ghost pacer <small>a dot moving at your best pace</small></span> <input type="checkbox" data-setting="ghost"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Juice</legend>
+        <label class="row">Key sounds <input type="checkbox" data-setting="sounds"></label>
+        <label class="row"><span>Confetti on a new best</span> <input type="checkbox" data-setting="particles"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Data</legend>
+        <p class="note">Your results stay in this browser only. Nothing is sent anywhere.</p>
+        <button type="button" id="clear-history" class="danger">Clear history and bests</button>
+      </fieldset>
+    </form>
+  </dialog>
+
+  <dialog id="feedback" aria-labelledby="feedback-title">
+    <form method="dialog" class="sheet">
+      <header><h2 id="feedback-title">Feedback</h2><button class="icon-btn close" value="close" aria-label="Close">✕</button></header>
+      <p class="note">What's fun, what's annoying, what's missing? Saved in this browser; you can also copy it or open an email draft.</p>
+      <textarea id="feedback-text" rows="5" placeholder="It would be more fun if…"></textarea>
+      <div class="actions">
+        <span id="feedback-status" class="note" aria-live="polite"></span>
+        <button type="button" id="feedback-copy">Copy</button>
+        <button type="button" id="feedback-email">Email draft</button>
+        <button type="button" id="feedback-save" class="primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="math" aria-labelledby="math-title">
+    <form method="dialog" class="sheet math">
+      <header><h2 id="math-title">How WPM is calculated</h2><button class="icon-btn close" value="close" aria-label="Close">✕</button></header>
+      <p>By convention a “word” is 5 characters, spaces included
+        (<a href="https://en.wikipedia.org/wiki/Words_per_minute" target="_blank" rel="noopener">Wikipedia: Words per minute</a>).
+        So WPM counts characters, not actual words, which keeps short and long words fair.</p>
+
+      <h3>1. Speed (the big number)</h3>
+      <math display="block"><mrow><mi>WPM</mi><mo>=</mo><mfrac><mrow><msub><mi>C</mi><mi>s</mi></msub><mo>/</mo><mn>5</mn></mrow><mrow><mi>t</mi><mo>/</mo><mn>60</mn></mrow></mfrac></mrow></math>
+      <ul class="symbols">
+        <li><math><msub><mi>C</mi><mi>s</mi></msub></math> — scored characters: every letter of each word you typed exactly right, plus one space after it, plus the word you’re on if it’s right so far</li>
+        <li><math><mi>t</mi></math> — time since your first keystroke, in seconds</li>
+      </ul>
+      <p class="plain">Only correct words count, so mistakes you leave behind cost you speed.</p>
+
+      <h3>2. Raw speed</h3>
+      <math display="block"><mrow><mi>Raw</mi><mo>=</mo><mfrac><mrow><msub><mi>C</mi><mi>t</mi></msub><mo>/</mo><mn>5</mn></mrow><mrow><mi>t</mi><mo>/</mo><mn>60</mn></mrow></mfrac></mrow></math>
+      <ul class="symbols">
+        <li><math><msub><mi>C</mi><mi>t</mi></msub></math> — every character you typed and kept, right or wrong, including spaces</li>
+      </ul>
+      <p class="plain">How fast your fingers moved, ignoring mistakes.</p>
+
+      <h3>3. Accuracy</h3>
+      <math display="block"><mrow><mi>Accuracy</mi><mo>=</mo><mfrac><msub><mi>K</mi><mi>c</mi></msub><mrow><msub><mi>K</mi><mi>c</mi></msub><mo>+</mo><msub><mi>K</mi><mi>i</mi></msub></mrow></mfrac><mo>×</mo><mn>100</mn><mo>%</mo></mrow></math>
+      <ul class="symbols">
+        <li><math><msub><mi>K</mi><mi>c</mi></msub></math> — correct keystrokes (a space counts as correct when the word before it is right)</li>
+        <li><math><msub><mi>K</mi><mi>i</mi></msub></math> — incorrect keystrokes, even ones you later fixed with Backspace</li>
+      </ul>
+      <p class="plain">The share of keys you hit right the first time.</p>
+
+      <p class="note">The raw-speed and accuracy rules are this app’s conventions; typing sites differ in the details. The ghost pacer assumes you typed your best run at an even pace.</p>
+    </form>
+  </dialog>
+</body>
+</html>
