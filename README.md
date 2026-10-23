@@ -2,6 +2,8 @@
 
 A calm, genuinely fun solo typing speed test: type, see your WPM, beat your best.
 
+**[Play it →](https://amalmehta.github.io/FunTypingTest/)**
+
 ![Typing, with a combo counter and the ghost pacer dot racing your best](docs/screenshots/typing-dark.jpg)
 
 | Results (light) | Results (dark) |
@@ -16,6 +18,7 @@ flowchart LR
   App <--> Storage[(localStorage)]
 ```
 
+- [Play it online](https://amalmehta.github.io/FunTypingTest/)
 - [How to run and use it](docs/INSTRUCTIONS.md)
 - [System design and how WPM is calculated](docs/SYSTEM-DESIGN.md)
 - [What's where](docs/FILE-STRUCTURE.md)

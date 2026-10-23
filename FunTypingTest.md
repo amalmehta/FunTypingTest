@@ -172,8 +172,7 @@ DEFINITIONS AND DEFERRED:
 - Done: npm test passes; works in light and dark, at 375 px width; the manual checklist (docs/MANUAL-REVIEW.md) is
   for the owner to run.
 - Deferred: Android on-screen keyboard support (key code 229); accounts, sync and leaderboards; word-count
-  sprints; punctuation/numbers mode; paste-your-own text; themed word packs; offline service worker;
-  hosting (GitHub Pages) and a GitHub repo.
+  sprints; punctuation/numbers mode; paste-your-own text; themed word packs; offline service worker.
 
 OPEN QUESTIONS / ASSUMPTIONS:
 
@@ -181,7 +180,8 @@ Answers from the owner (2026-10-22):
 - Fun: beat-your-best, combo & juice, fun content, calm & minimal. Resolved as "calm by default", juice opt-in.
 - Text: common words by default, plus a "Silly sentences" mode.
 - Format: timed 15/30/60 s.
-- Delivery: static site, local only (localStorage), local git repo, no push.
+- Delivery: static site, local only (localStorage). Repo: public github.com/amalmehta/FunTypingTest with GitHub Pages
+  (owner asked 2026-10-23; originally local-only).
 - Look: "Paper & ink" mockup (cream #FBF7F0, ink #3B342C, terracotta accent).
 - Audience: the owner, for fun and practice; history chart matters.
 
@@ -228,3 +228,4 @@ CHANGELOG:
 - 2026-10-21 — added meta-instruction: make equations easy to read (typeset, not raw LaTeX; symbols defined beneath; a plain-language line; short steps)
 - 2026-10-22 — filled in definitions, deferred list and owner answers; built the first version of the website
 - 2026-10-23 — profiled in headless Chrome; fixed caret sweep on line wrap and stray keys skipping results; added npm run profile
+- 2026-10-23 — published: public GitHub repo FunTypingTest, live on GitHub Pages

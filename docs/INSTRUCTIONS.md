@@ -1,6 +1,10 @@
 # Instructions
 
-## Run it
+## Play it online
+
+https://amalmehta.github.io/FunTypingTest/ (GitHub Pages, served from the `main` branch).
+
+## Run it locally
 
 No install needed. Any static file server works (ES modules don't load from `file://`):
 
@@ -40,7 +44,7 @@ It types a 15-second test at 120 WPM and prints frame times, key latency and car
 
 ## Deploy
 
-Copy the folder to any static host (GitHub Pages, Netlify, an S3 bucket). There is no build step, and nothing to configure.
+It's live on GitHub Pages: every push to `main` republishes the site within a minute or two. Any other static host (Netlify, an S3 bucket) works too: copy the folder. There is no build step.
 
 ## Data and privacy
 

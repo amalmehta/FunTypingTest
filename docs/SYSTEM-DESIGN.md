@@ -1,6 +1,6 @@
 # System Design
 
-Fun Typing Test is a static website: plain HTML, CSS and JavaScript modules, no build step, no backend, no dependencies. Everything runs in the browser and is saved in `localStorage`.
+Fun Typing Test is a static website: plain HTML, CSS and JavaScript modules, no build step, no backend, no dependencies. Everything runs in the browser and is saved in `localStorage`. It is hosted free on GitHub Pages from the `main` branch: https://amalmehta.github.io/FunTypingTest/
 
 ## Architecture
 
