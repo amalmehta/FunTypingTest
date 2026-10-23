@@ -19,7 +19,7 @@ flowchart LR
 |---|---|---|
 | `js/app.js` | Reads keys, paints only the words that changed, moves the caret and ghost, runs the frame loop, shows results, wires settings and feedback dialogs | everything |
 | `js/engine.js` | `TypingTest`: holds target words, what was typed, the clock, keystroke counts, combo, per-second samples. No DOM, so it is unit-tested in Node | `stats.js` |
-| `js/stats.js` | Pure functions: character counts, WPM, accuracy, pacer position | — |
+| `js/stats.js` | Pure functions: character counts, gross and net WPM, accuracy, pacer position | — |
 | `js/words.js` | Endless word streams: common words (cited) and silly sentences (original) | — |
 | `js/storage.js` | Settings, run history (last 500), personal bests per mode, saved feedback. Writes are batched 300 ms after the last change | `localStorage` |
 | `js/chart.js` | Single-series SVG line chart with hover crosshair + tooltip | — |
@@ -34,23 +34,24 @@ flowchart LR
 
 ## Definitions (how the numbers are computed)
 
-A “word” is 5 characters including spaces ([Wikipedia: Words per minute](https://en.wikipedia.org/wiki/Words_per_minute)). The other rules are this app's conventions (labeled as such in the UI):
+A “word” is 5 characters including spaces ([Wikipedia: Words per minute](https://en.wikipedia.org/wiki/Words_per_minute)). Gross WPM, net WPM and accuracy follow the standard definitions; they live as pure functions in `js/stats.js`.
 
-$$\text{WPM} = \frac{C_s / 5}{t / 60}$$
+$$\text{Gross} = \frac{C_t / 5}{m}$$
 
-- $C_s$ — scored characters: letters of each word typed exactly right plus one space after it, plus the word in progress if it is a correct prefix
-- $t$ — seconds since the first keystroke (equal to the test duration at the end)
+- $C_t$ — all characters in what was typed, right or wrong, including spaces
+- $m$ — minutes since the first keystroke (the test duration at the end); page load does not start the clock
 
-Only correct words count, so mistakes left behind cost speed.
+$$\text{Net} = \max\left(0,\ \text{Gross} - \frac{E}{m}\right)$$
 
-$$\text{Raw} = \frac{C_t / 5}{t / 60}$$
+- $E$ — uncorrected errors: wrong, extra and skipped letters still in the text
 
-- $C_t$ — all characters typed and kept, right or wrong, including spaces
+Net WPM is the headline number and the personal best. Fixed mistakes cost only the time spent fixing them.
 
-$$\text{Accuracy} = \frac{K_c}{K_c + K_i} \times 100\%$$
+$$\text{Accuracy} = \frac{K_c}{K_t} \times 100\%$$
 
 - $K_c$ — correct keystrokes; a space is correct when the word before it is exactly right
-- $K_i$ — incorrect keystrokes, including ones later fixed with Backspace
+- $K_t$ — all keystrokes except Backspace, so mistakes later fixed with Backspace still count against accuracy
+- With no keystrokes, accuracy is 0 and both WPMs are 0 (no division by zero)
 
 Other rules:
 

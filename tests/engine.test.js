@@ -24,6 +24,36 @@ test("the clock starts on the first letter, not before", () => {
   assert.equal(t.startedAt, 1000);
 });
 
+test("waiting on the page does not run the clock", () => {
+  const t = new TypingTest({ nextWord: fixed("the"), durationMs: 15000 });
+  t.tick(60000); // the frame loop may tick long after the page loaded
+  assert.equal(t.status, "ready");
+  assert.equal(t.elapsed(60000), 0);
+  t.type("t", 60000);
+  assert.equal(t.elapsed(61000), 1000);
+});
+
+test("backspaced mistakes lower accuracy but not net WPM", () => {
+  const t = new TypingTest({ nextWord: fixed("abcd"), durationMs: 60000 });
+  typeAll(t, "abcx", 0, 1000);
+  t.backspace();
+  typeAll(t, "d ", 4000, 1000);
+  const s = t.stats(6000);
+  assert.equal(t.totalKeys, 6);
+  assert.equal(Math.round(s.accuracy), 83);
+  assert.equal(s.chars.errors, 0);
+  assert.equal(s.wpm, s.gross);
+  assert.equal(Math.round(s.gross), 10); // 5 chars in 6 s
+});
+
+test("mistakes left in the text lower net WPM below gross", () => {
+  const t = new TypingTest({ nextWord: fixed("abcd"), durationMs: 60000 });
+  typeAll(t, "abcx ", 0, 1000);
+  const s = t.stats(6000);
+  assert.equal(Math.round(s.gross), 10);
+  assert.equal(Math.round(s.wpm), 0); // 10 gross - 1 error / 0.1 min = 0
+});
+
 test("perfect typing for a minute gives the textbook WPM", () => {
   // "abcd " is 5 chars = 1 word. 60 of them in 60 s = 60 WPM.
   const t = new TypingTest({ nextWord: fixed("abcd"), durationMs: 60000 });
@@ -32,6 +62,7 @@ test("perfect typing for a minute gives the textbook WPM", () => {
   const s = t.stats(60000);
   assert.equal(t.status, "done");
   assert.equal(Math.round(s.wpm), 60);
+  assert.equal(Math.round(s.gross), 60);
   assert.equal(s.accuracy, 100);
   assert.equal(t.samples.length, 60);
 });

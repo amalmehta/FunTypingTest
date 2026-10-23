@@ -61,18 +61,20 @@
 
     <section id="results" class="view" hidden>
       <div class="result-head">
-        <div class="big">
-          <span id="r-wpm" class="big-num">0</span><span class="big-unit">wpm</span>
+        <div class="score">
+          <div class="big">
+            <span id="r-wpm" class="big-num">0</span><span class="big-unit">net wpm</span>
+          </div>
+          <p class="sub-stats"><span><b id="r-gross"></b> gross wpm</span><span><b id="r-acc"></b> accuracy</span></p>
         </div>
         <div id="r-badge" class="badge" hidden></div>
       </div>
       <dl class="facts">
-        <div><dt>Accuracy</dt><dd id="r-acc"></dd></div>
-        <div><dt>Raw</dt><dd id="r-raw"></dd></div>
+        <div><dt title="wrong, extra and skipped letters left in the text">Uncorrected errors</dt><dd id="r-errors"></dd></div>
         <div><dt>Best combo</dt><dd id="r-combo"></dd></div>
         <div><dt title="correct / incorrect / extra / missed">Characters</dt><dd id="r-chars"></dd></div>
       </dl>
-      <h2 class="chart-title">WPM during this test</h2>
+      <h2 class="chart-title">Net WPM during this test</h2>
       <div id="r-chart" class="chart"></div>
       <h2 class="chart-title" id="r-history-title">Your recent tests</h2>
       <div id="r-history" class="chart"></div>
@@ -142,30 +144,30 @@
         (<a href="https://en.wikipedia.org/wiki/Words_per_minute" target="_blank" rel="noopener">Wikipedia: Words per minute</a>).
         So WPM counts characters, not actual words, which keeps short and long words fair.</p>
 
-      <h3>1. Speed (the big number)</h3>
-      <math display="block"><mrow><mi>WPM</mi><mo>=</mo><mfrac><mrow><msub><mi>C</mi><mi>s</mi></msub><mo>/</mo><mn>5</mn></mrow><mrow><mi>t</mi><mo>/</mo><mn>60</mn></mrow></mfrac></mrow></math>
+      <h3>1. Gross WPM</h3>
+      <math display="block"><mrow><mi>Gross</mi><mo>=</mo><mfrac><mrow><msub><mi>C</mi><mi>t</mi></msub><mo>/</mo><mn>5</mn></mrow><mi>m</mi></mfrac></mrow></math>
       <ul class="symbols">
-        <li><math><msub><mi>C</mi><mi>s</mi></msub></math> — scored characters: every letter of each word you typed exactly right, plus one space after it, plus the word you’re on if it’s right so far</li>
-        <li><math><mi>t</mi></math> — time since your first keystroke, in seconds</li>
-      </ul>
-      <p class="plain">Only correct words count, so mistakes you leave behind cost you speed.</p>
-
-      <h3>2. Raw speed</h3>
-      <math display="block"><mrow><mi>Raw</mi><mo>=</mo><mfrac><mrow><msub><mi>C</mi><mi>t</mi></msub><mo>/</mo><mn>5</mn></mrow><mrow><mi>t</mi><mo>/</mo><mn>60</mn></mrow></mfrac></mrow></math>
-      <ul class="symbols">
-        <li><math><msub><mi>C</mi><mi>t</mi></msub></math> — every character you typed and kept, right or wrong, including spaces</li>
+        <li><math><msub><mi>C</mi><mi>t</mi></msub></math> — every character in what you typed, right or wrong, including spaces</li>
+        <li><math><mi>m</mi></math> — minutes since your first keystroke</li>
       </ul>
       <p class="plain">How fast your fingers moved, ignoring mistakes.</p>
 
+      <h3>2. Net WPM (the big number)</h3>
+      <math display="block"><mrow><mi>Net</mi><mo>=</mo><mo>max</mo><mo>(</mo><mn>0</mn><mo>,</mo><mi>Gross</mi><mo>−</mo><mfrac><mi>E</mi><mi>m</mi></mfrac><mo>)</mo></mrow></math>
+      <ul class="symbols">
+        <li><math><mi>E</mi></math> — uncorrected errors: wrong, extra and skipped letters still in the text at the end</li>
+      </ul>
+      <p class="plain">Each mistake you leave behind costs one word per minute. Mistakes you fix cost only the time it took.</p>
+
       <h3>3. Accuracy</h3>
-      <math display="block"><mrow><mi>Accuracy</mi><mo>=</mo><mfrac><msub><mi>K</mi><mi>c</mi></msub><mrow><msub><mi>K</mi><mi>c</mi></msub><mo>+</mo><msub><mi>K</mi><mi>i</mi></msub></mrow></mfrac><mo>×</mo><mn>100</mn><mo>%</mo></mrow></math>
+      <math display="block"><mrow><mi>Accuracy</mi><mo>=</mo><mfrac><msub><mi>K</mi><mi>c</mi></msub><msub><mi>K</mi><mi>t</mi></msub></mfrac><mo>×</mo><mn>100</mn><mo>%</mo></mrow></math>
       <ul class="symbols">
         <li><math><msub><mi>K</mi><mi>c</mi></msub></math> — correct keystrokes (a space counts as correct when the word before it is right)</li>
-        <li><math><msub><mi>K</mi><mi>i</mi></msub></math> — incorrect keystrokes, even ones you later fixed with Backspace</li>
+        <li><math><msub><mi>K</mi><mi>t</mi></msub></math> — all keystrokes except Backspace, so a mistake counts even if you later fix it</li>
       </ul>
       <p class="plain">The share of keys you hit right the first time.</p>
 
-      <p class="note">The raw-speed and accuracy rules are this app’s conventions; typing sites differ in the details. The ghost pacer assumes you typed your best run at an even pace.</p>
+      <p class="note">These are the standard gross/net WPM and accuracy definitions. The ghost pacer assumes you typed your best run at an even pace.</p>
     </form>
   </dialog>
 </body>

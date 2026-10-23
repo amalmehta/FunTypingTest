@@ -6,8 +6,10 @@ export const CHARS_PER_WORD = 5;
 // Character counts for the words typed so far.
 // targets: the words to type; typed: what was typed for each word up to `index`;
 // index: the word currently being typed (earlier words are committed with a space).
+// typed = characters now in the input, incl. spaces; errors = uncorrected errors left in it
+// (wrong letters, extra letters, and letters skipped in committed words).
 export function countChars(targets, typed, index) {
-  const c = { scored: 0, typed: 0, correct: 0, incorrect: 0, extra: 0, missed: 0 };
+  const c = { typed: 0, correct: 0, incorrect: 0, extra: 0, missed: 0, errors: 0 };
   for (let i = 0; i <= index && i < targets.length; i++) {
     const target = targets[i];
     const input = typed[i] ?? "";
@@ -18,21 +20,29 @@ export function countChars(targets, typed, index) {
     }
     c.extra += Math.max(0, input.length - target.length);
     c.typed += input.length + (committed ? 1 : 0);
-    // Only correctly typed words score; the word in progress scores if it is a correct prefix so far.
-    if (committed && input === target) c.scored += target.length + 1;
-    else if (!committed && target.startsWith(input)) c.scored += input.length;
   }
+  c.errors = c.incorrect + c.extra + c.missed;
   return c;
 }
 
-export function wpm(chars, elapsedMs) {
+const minutes = (elapsedMs) => elapsedMs / 60000;
+
+// Gross WPM = (all typed characters / 5) / minutes.
+export function grossWpm(typedChars, elapsedMs) {
   if (elapsedMs <= 0) return 0;
-  return chars / CHARS_PER_WORD / (elapsedMs / 60000);
+  return typedChars / CHARS_PER_WORD / minutes(elapsedMs);
 }
 
-export function accuracy(correctKeys, incorrectKeys) {
-  const total = correctKeys + incorrectKeys;
-  return total === 0 ? 100 : (correctKeys / total) * 100;
+// Net WPM = gross WPM - uncorrected errors per minute, never below 0.
+export function netWpm(typedChars, uncorrectedErrors, elapsedMs) {
+  if (elapsedMs <= 0) return 0;
+  return Math.max(0, grossWpm(typedChars, elapsedMs) - uncorrectedErrors / minutes(elapsedMs));
+}
+
+// Accuracy = correct keystrokes / all keystrokes, as a percentage. Backspaced mistakes still count.
+// With no keystrokes nothing was typed correctly, so it is 0.
+export function accuracy(correctKeys, totalKeys) {
+  return totalKeys === 0 ? 0 : (correctKeys / totalKeys) * 100;
 }
 
 // Where a pacer at `paceWpm` would be after `elapsedMs`: { word, letter } within targets.

@@ -155,10 +155,10 @@ website
 DEFINITIONS AND DEFERRED:
 
 - Word (for WPM): 5 characters including spaces. Source: https://en.wikipedia.org/wiki/Words_per_minute
-- WPM (the headline number): (scored characters / 5) / (seconds / 60). Scored characters = letters of each
-  word typed exactly right + 1 space each, plus the word in progress if it's a correct prefix. App convention.
-- Raw WPM: (all typed characters kept, incl. spaces / 5) / (seconds / 60). App convention.
-- Accuracy: correct keystrokes / all keystrokes x 100; fixed mistakes still count as incorrect. App convention.
+- Gross WPM: (all typed characters incl. spaces / 5) / minutes since the first keystroke.
+- Net WPM (the headline number): gross WPM - uncorrected errors per minute, never below 0.
+  Uncorrected errors = wrong, extra and skipped letters left in the text.
+- Accuracy: correct keystrokes / all keystrokes (except Backspace) x 100; fixed mistakes still count.
 - Timer: starts on the first letter, ends at exactly 15, 30 or 60 s.
 - Common words: the Oxford English Corpus top 100, per https://en.wikipedia.org/wiki/Most_common_words_in_English
 - Silly sentences: 30 original nonsense sentences written for the app (labeled as such in code).

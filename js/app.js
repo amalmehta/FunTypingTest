@@ -221,7 +221,7 @@ function showResults() {
     source: set.source,
     duration: set.duration,
     wpm: s.wpm,
-    raw: s.raw,
+    gross: s.gross,
     accuracy: s.accuracy,
     maxCombo: s.maxCombo,
     chars: s.chars,
@@ -229,8 +229,9 @@ function showResults() {
   const previous = store.addRun(run);
 
   $("r-wpm").textContent = Math.round(s.wpm);
+  $("r-gross").textContent = Math.round(s.gross);
   $("r-acc").textContent = `${Math.round(s.accuracy)}%`;
-  $("r-raw").textContent = Math.round(s.raw);
+  $("r-errors").textContent = s.chars.errors;
   $("r-combo").textContent = s.maxCombo;
   const c = s.chars;
   $("r-chars").textContent = `${c.correct}/${c.incorrect}/${c.extra}/${c.missed}`;
@@ -242,7 +243,7 @@ function showResults() {
   if (isRecord && previous) badge.textContent = `New best! +${Math.round(s.wpm - previous.wpm)} wpm`;
   else if (isRecord) badge.textContent = "First result for this mode — now beat it";
   else if (!previous) {
-    badge.textContent = "No words scored — give it another go";
+    badge.textContent = "Too many mistakes left in to score — give it another go";
     badge.classList.add("quiet");
   } else {
     badge.textContent = `${Math.round(previous.wpm - s.wpm)} wpm off your best (${Math.round(previous.wpm)})`;
@@ -257,7 +258,7 @@ function showResults() {
     lineChart($("r-chart"), test.samples.map((p) => ({
       x: p.second,
       y: p.wpm,
-      label: `${p.second}s · ${Math.round(p.wpm)} wpm${p.errors ? ` · ${p.errors} error${p.errors > 1 ? "s" : ""}` : ""}`,
+      label: `${p.second}s · ${Math.round(p.wpm)} net · ${Math.round(p.gross)} gross${p.errors ? ` · ${p.errors} error${p.errors > 1 ? "s" : ""}` : ""}`,
     })), { xLabel: "s" });
     const recent = store.runs(currentKey()).slice(-20);
     $("r-history-title").textContent = `Your last ${recent.length} tests (${set.duration}s, ${SOURCES[set.source].label.toLowerCase()})`;

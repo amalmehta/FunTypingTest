@@ -1,5 +1,5 @@
 // The typing test state machine. No DOM: the UI feeds it keys and times, then reads its state.
-import { countChars, wpm, accuracy } from "./stats.js";
+import { countChars, grossWpm, netWpm, accuracy } from "./stats.js";
 
 export const MAX_EXTRA_LETTERS = 10;
 const WORD_BUFFER = 60; // keep at least this many words ahead of the cursor
@@ -15,10 +15,10 @@ export class TypingTest {
     this.startedAt = 0;
     this.endedAt = 0;
     this.correctKeys = 0;
-    this.incorrectKeys = 0;
+    this.totalKeys = 0;
     this.combo = 0;
     this.maxCombo = 0;
-    this.samples = []; // one per whole second: { second, wpm, raw, errors }
+    this.samples = []; // one per whole second: { second, wpm (net), gross, errors }
     this.errorsThisSecond = 0;
     this.fill();
   }
@@ -69,12 +69,12 @@ export class TypingTest {
   }
 
   key(ok, now) {
+    this.totalKeys++;
     if (ok) {
       this.correctKeys++;
       this.combo++;
       this.maxCombo = Math.max(this.maxCombo, this.combo);
     } else {
-      this.incorrectKeys++;
       this.errorsThisSecond++;
       this.combo = 0;
     }
@@ -95,8 +95,8 @@ export class TypingTest {
       const c = countChars(this.targets, this.typed, this.index);
       this.samples.push({
         second,
-        wpm: wpm(c.scored, second * 1000),
-        raw: wpm(c.typed, second * 1000),
+        wpm: netWpm(c.typed, c.errors, second * 1000),
+        gross: grossWpm(c.typed, second * 1000),
         errors: this.errorsThisSecond,
       });
       this.errorsThisSecond = 0;
@@ -118,9 +118,9 @@ export class TypingTest {
     const c = countChars(this.targets, this.typed, this.index);
     return {
       elapsed,
-      wpm: wpm(c.scored, elapsed),
-      raw: wpm(c.typed, elapsed),
-      accuracy: accuracy(this.correctKeys, this.incorrectKeys),
+      wpm: netWpm(c.typed, c.errors, elapsed),
+      gross: grossWpm(c.typed, elapsed),
+      accuracy: accuracy(this.correctKeys, this.totalKeys),
       chars: c,
       maxCombo: this.maxCombo,
       combo: this.combo,
