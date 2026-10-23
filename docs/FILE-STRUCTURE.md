@@ -19,6 +19,8 @@ FunTypingTest/
 │   ├── icon.svg           App icon (keycap + lightning bolt), also the favicon
 │   ├── icon-180.png       Apple touch icon
 │   └── icon-512.png       Large icon for the manifest
+├── scripts/
+│   └── profile.mjs        Smoothness profiler: types a test in headless Chrome, reports frame and caret stats
 ├── tests/
 │   ├── stats.test.js      Formula tests
 │   └── engine.test.js     Engine and word-stream tests

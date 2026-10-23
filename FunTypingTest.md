@@ -227,3 +227,4 @@ CHANGELOG:
 - 2026-10-20 — added meta-instruction: make the UI/UX buttery smooth (instant response, nothing blocking the main thread, full-frame-rate motion, no flicker or jumps)
 - 2026-10-21 — added meta-instruction: make equations easy to read (typeset, not raw LaTeX; symbols defined beneath; a plain-language line; short steps)
 - 2026-10-22 — filled in definitions, deferred list and owner answers; built the first version of the website
+- 2026-10-23 — profiled in headless Chrome; fixed caret sweep on line wrap and stray keys skipping results; added npm run profile

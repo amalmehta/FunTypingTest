@@ -18,6 +18,16 @@ Needs Node 18 or later:
 npm test
 ```
 
+## Profile smoothness
+
+With the site served on port 5173 and Google Chrome installed:
+
+```bash
+npm run profile -- 120
+```
+
+It types a 15-second test at 120 WPM and prints frame times, key latency and caret lag.
+
 ## Use it
 
 - **Start**: just type. The clock starts on your first letter.

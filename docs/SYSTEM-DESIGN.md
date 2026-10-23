@@ -30,7 +30,7 @@ flowchart LR
 1. **Start.** The page loads, applies the saved theme before first paint (inline script in `index.html`), builds the first 60 words, and puts the caret on the first letter. Nothing is timed yet.
 2. **Type.** Each `keydown` goes to `TypingTest.type()` or `.backspace()`. The engine starts the clock on the first letter. The UI repaints only the current word (and the previous one when a word is committed or reopened), then moves the caret with a CSS transform. The engine keeps at least 60 words ahead; new ones are appended to the DOM in one fragment.
 3. **Frame loop.** While running, `requestAnimationFrame` calls `tick()`, which records one sample per whole second and ends the test at exactly the chosen duration. The timer text changes once a second, live WPM every 500 ms, the ghost every 250 ms.
-4. **Results.** The run is saved, the previous best is compared, the badge shows "New best! +N" or the gap, and both charts render on the next frame (they need the layout to measure width).
+4. **Results.** For 500 ms after results appear, Enter/Tab/Esc are ignored and stray letters are swallowed, so keys still in flight can't skip them. The run is saved, the previous best is compared, the badge shows "New best! +N" or the gap, and both charts render on the next frame (they need the layout to measure width).
 
 ## Definitions (how the numbers are computed)
 
@@ -76,7 +76,14 @@ Other rules:
 
 - `npm test` runs `node --test` over `tests/`: scoring formulas, clock start/stop, combo, backspace rules, extra-letter cap, word supply, word streams.
 - Manual: [MANUAL-REVIEW.md](MANUAL-REVIEW.md) covers feel, smoothness, dark mode and devices.
-- Profiled in the browser: 254 scripted keystrokes at 200 WPM, keystroke handler max 1.9 ms, average 1.1 ms.
+- `npm run profile -- <wpm>` types a 15s test in headless Chrome with trusted key events and reports frame times, key-to-frame latency, caret lag, long tasks and layout shift. Results on 2026-10-23 (Chrome 156, MacBook):
+
+  | Speed | Frame p99 / max | Key → next frame, max | Caret lag p95 / max | Long tasks | Layout shift |
+  |---|---|---|---|---|---|
+  | 80 WPM | 16.8 / 16.8 ms | 15.3 ms | 17 / 17 px | 0 | 0 |
+  | 150 WPM | 16.8 / 16.8 ms | 16.2 ms | 16.9 / 22.6 px | 0 | 0 |
+
+  17 px is about one letter. Profiling found and fixed two bugs: the caret swept back across the whole line when wrapping (now it jumps to the new line), and keys still in flight when time ran out could press "Next test" and skip the results (keys are now swallowed on the results screen, and Enter/Tab wait 500 ms).
 
 ## Scale and what would change
 
@@ -90,5 +97,5 @@ Today: one person, one browser, a few hundred runs. Storage is a single JSON blo
 
 - Android on-screen keyboards: unreliable key detection (see above).
 - Browser shortcuts: some browsers keep `⌘,` for their own settings; the gear button always works.
-- The caret glides with a 90 ms transition; very fast typists (>130 WPM) may see it trail by a letter. Turn off "Smooth caret" in Settings if so.
+- The caret glides with a 90 ms transition, so it trails by up to about one letter at 150 WPM (measured). Turn off "Smooth caret" in Settings for an instant caret.
 - Stats are per browser; private windows don't keep them.

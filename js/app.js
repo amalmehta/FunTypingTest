@@ -19,6 +19,9 @@ let scrollY = 0;
 let lastLiveUpdate = 0;
 let lastGhostUpdate = 0;
 let frame = 0;
+let caretY = -1;
+let resultsShownAt = 0;
+const RESULTS_KEY_GUARD_MS = 500; // keys still in flight when time runs out must not skip the results
 
 const settings = () => store.settings();
 const currentKey = () => modeKey(settings().source, settings().duration);
@@ -98,7 +101,15 @@ function placeCaret() {
     scrollY = wantScroll;
     ui.words.style.transform = `translateY(${-scrollY}px)`;
   }
+  // Jump, don't glide, onto a new line: gliding would sweep the caret back across the whole line.
+  const newLine = y !== caretY;
+  caretY = y;
+  if (newLine) ui.caret.style.transition = "none";
   ui.caret.style.transform = `translate(${x}px, ${y - scrollY}px)`;
+  if (newLine) {
+    void ui.caret.offsetWidth; // commit the jump before restoring the transition
+    ui.caret.style.transition = "";
+  }
 }
 
 function placeGhost(now) {
@@ -137,6 +148,7 @@ function newTest() {
   test = new TypingTest({ nextWord: SOURCES[s.source].stream(), durationMs: s.duration * 1000 });
   wordEls = [];
   scrollY = 0;
+  caretY = -1;
   ui.words.replaceChildren();
   ui.words.style.transform = "";
   appendWords(0);
@@ -239,6 +251,7 @@ function showResults() {
 
   ui.test.hidden = true;
   ui.results.hidden = false;
+  resultsShownAt = performance.now();
   // Charts need the results view laid out to measure their width.
   requestAnimationFrame(() => {
     lineChart($("r-chart"), test.samples.map((p) => ({
@@ -275,14 +288,13 @@ document.addEventListener("keydown", (e) => {
   if (anyDialogOpen()) return;
   if (e.key === "Tab" || e.key === "Escape") {
     e.preventDefault();
-    newTest();
+    if (ui.results.hidden || performance.now() - resultsShownAt > RESULTS_KEY_GUARD_MS) newTest();
     return;
   }
   if (!ui.results.hidden) {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      newTest();
-    }
+    // Swallow typing so a stray Space can't press the focused "Next test" button.
+    if (e.key === "Enter" || e.key.length === 1) e.preventDefault();
+    if (e.key === "Enter" && performance.now() - resultsShownAt > RESULTS_KEY_GUARD_MS) newTest();
     return;
   }
   if (e.metaKey || (e.ctrlKey && e.key !== "Backspace")) return;
