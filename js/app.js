@@ -3,7 +3,7 @@ import { TypingTest } from "./engine.js";
 import { pacerPosition } from "./stats.js";
 import { SOURCES } from "./words.js";
 import { store, modeKey } from "./storage.js";
-import { lineChart } from "./chart.js";
+import { lineChart, sparkline } from "./chart.js";
 import { keySound, confetti } from "./effects.js";
 
 const $ = (id) => document.getElementById(id);
@@ -248,9 +248,9 @@ function showResults() {
 
   const badge = $("r-badge");
   badge.hidden = false;
-  badge.classList.remove("quiet");
+  badge.classList.remove("quiet", "pb");
   const isRecord = s.wpm > 0 && (!previous || s.wpm > previous.wpm);
-  if (isRecord && previous) badge.textContent = `New best! +${Math.round(s.wpm - previous.wpm)} wpm`;
+  if (isRecord && previous) celebrate(badge, s.wpm - previous.wpm);
   else if (isRecord) badge.textContent = "First result for this mode — now beat it";
   else if (!previous) {
     badge.textContent = "Too many mistakes left in to score — give it another go";
@@ -271,19 +271,43 @@ function showResults() {
       marks: p.errors,
       label: `${p.second}s · ${Math.round(p.wpm)} net · ${Math.round(p.gross)} raw${p.errors ? ` · ${p.errors} mistake${p.errors > 1 ? "s" : ""}` : ""}`,
     })), { xLabel: "s" });
-    const recent = store.runs(currentKey()).slice(-20);
-    $("r-history-title").textContent = `Your last ${recent.length} tests (${set.duration}s, ${SOURCES[set.source].label.toLowerCase()})`;
-    const first = store.runs(currentKey()).length - recent.length + 1;
-    lineChart($("r-history"), recent.map((r, i) => ({
-      x: first + i,
-      y: r.wpm,
-      label: `Test ${first + i} · ${Math.round(r.wpm)} wpm · ${Math.round(r.accuracy)}%`,
-    })), { height: 110, xLabel: "" });
+    modeHistoryChart();
   });
   if (isRecord && previous && set.particles) {
     const css = getComputedStyle(document.documentElement);
     confetti(["--accent", "--good", "--error", "--ink-soft"].map((v) => css.getPropertyValue(v).trim()));
   }
+}
+
+// The pulse and sparks are CSS; reduced motion leaves just the badge.
+function celebrate(badge, gain) {
+  const sparks = Array.from({ length: 10 }, (_, i) => {
+    const spark = document.createElement("i");
+    spark.className = "spark";
+    spark.style.setProperty("--a", `${i * 36 + Math.random() * 20}deg`);
+    spark.style.setProperty("--d", `${28 + Math.random() * 18}px`);
+    return spark;
+  });
+  badge.replaceChildren(
+    Object.assign(document.createElement("strong"), { textContent: "New PB!" }),
+    ` +${Math.round(gain)} wpm`,
+    ...sparks,
+  );
+  void badge.offsetWidth; // restart the animation when two records come in a row
+  badge.classList.add("pb");
+}
+
+function modeHistoryChart() {
+  const set = settings();
+  const all = store.runs(currentKey());
+  const recent = all.slice(-20);
+  $("r-history-title").textContent = `Your last ${recent.length} tests (${set.duration}s, ${SOURCES[set.source].label.toLowerCase()})`;
+  const first = all.length - recent.length + 1;
+  lineChart($("r-history"), recent.map((r, i) => ({
+    x: first + i,
+    y: r.wpm,
+    label: `Test ${first + i} · ${Math.round(r.wpm)} wpm · ${Math.round(r.accuracy)}%`,
+  })), { height: 110, xLabel: "" });
 }
 
 function showResultsView() {
@@ -390,10 +414,79 @@ for (const input of document.querySelectorAll("[data-setting]")) {
     if (name === "liveWpm" && !input.checked) ui.liveWpm.textContent = "";
   });
 }
-$("clear-history").addEventListener("click", () => {
-  if (!confirm("Clear every saved result and personal best in this browser?")) return;
+// ---------- History ----------
+
+const HISTORY_SIZE = 20;
+const timeFmt = new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" });
+const dateFmt = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
+
+function when(ts) {
+  const d = new Date(ts);
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(ts).setHours(0, 0, 0, 0)) / 86400000);
+  const day = days === 0 ? "Today" : days === 1 ? "Yesterday" : dateFmt.format(d);
+  return `${day}, ${timeFmt.format(d)}`;
+}
+
+function cell(text, className) {
+  const td = document.createElement("td");
+  td.textContent = text;
+  if (className) td.className = className;
+  return td;
+}
+
+function renderHistory() {
+  const runs = store.recent(HISTORY_SIZE);
+  $("h-empty").hidden = runs.length > 0;
+  $("h-body").hidden = runs.length === 0;
+  showClearConfirm(false);
+  if (!runs.length) return;
+  const avg = runs.reduce((sum, r) => sum + r.wpm, 0) / runs.length;
+  $("h-summary").textContent = `Last ${runs.length} test${runs.length > 1 ? "s" : ""} · average ${Math.round(avg)} net wpm`;
+  sparkline($("h-spark"), runs.map((r) => ({ y: r.wpm, hot: r.pb })), { label: "Net WPM trend over your recent tests" });
+  // Newest first in the table; the sparkline reads left to right, oldest to newest.
+  $("h-rows").replaceChildren(...runs.toReversed().map((r) => {
+    const tr = document.createElement("tr");
+    const net = cell(Math.round(r.wpm), "num");
+    if (r.pb) {
+      tr.classList.add("is-pb");
+      net.title = "New personal best";
+    }
+    tr.append(
+      cell(when(r.ts)),
+      cell(`${r.duration}s · ${r.source === "silly" ? "Silly" : "Words"}`),
+      net,
+      cell(r.gross == null ? "–" : Math.round(r.gross), "num"),
+      cell(`${Math.round(r.accuracy)}%`, "num"),
+    );
+    return tr;
+  }));
+}
+
+function openHistory() {
+  openDialog("history");
+  renderHistory(); // after opening, so the sparkline can measure its width
+}
+
+function showClearConfirm(on) {
+  $("h-actions").hidden = on;
+  $("h-confirm").hidden = !on;
+  if (!on) return;
+  const n = store.count();
+  $("h-confirm-text").textContent = `Delete all ${n} saved run${n === 1 ? "" : "s"} and your personal bests?`;
+  $("h-cancel").focus();
+}
+
+$("open-history").addEventListener("click", openHistory);
+$("results-history").addEventListener("click", openHistory);
+$("settings-history").addEventListener("click", openHistory);
+$("h-clear").addEventListener("click", () => showClearConfirm(true));
+$("h-cancel").addEventListener("click", () => { showClearConfirm(false); $("h-clear").focus(); });
+$("h-clear-yes").addEventListener("click", () => {
   store.clearHistory();
   ui.pbHint.textContent = "";
+  if (!ui.results.hidden) modeHistoryChart();
+  renderHistory();
+  $("history").querySelector(".close").focus();
 });
 
 const feedbackStatus = (text) => {

@@ -39,7 +39,8 @@ It types a 15-second test at 120 WPM and prints frame times, key latency and car
 - **Restart**: `Tab` or `Esc` mid-test. When a test is done, `Tab`+`Enter` (or the Restart button, or `Enter` alone) starts the next one.
 - **Results**: net WPM, accuracy, raw WPM, character counts, duration, and WPM per second with red dots where you made mistakes. `Esc` flips between the results and your finished text.
 - **Fix mistakes**: `Backspace`; you can go back into the previous word only if it has a mistake. `⌥⌫` (Ctrl+Backspace) clears the word.
-- **Settings**: the gear, or `⌘,` / `Ctrl+,`. Theme, smooth caret, live WPM, combo counter, ghost pacer, key sounds, confetti, clear history.
+- **History**: the clock button in the top bar. Your last 20 runs (date, mode, net and raw WPM, accuracy) with a WPM sparkline; ★ marks runs that set a new personal best. "Clear history" asks before deleting.
+- **Settings**: the gear, or `⌘,` / `Ctrl+,`. Theme, smooth caret, live WPM, combo counter, ghost pacer, key sounds, confetti.
 - **How the score works**: "How is WPM calculated?" at the bottom.
 - **Feedback**: the small tab on the right edge.
 
@@ -49,4 +50,4 @@ It's live on GitHub Pages: every push to `main` republishes the site within a mi
 
 ## Data and privacy
 
-Results, bests, settings and saved feedback live in your browser's `localStorage` under the key `funTypingTest.v1`. Nothing is sent anywhere. Settings > Clear history removes results and bests.
+Results, bests, settings and saved feedback live in your browser's `localStorage` under the key `funTypingTest.v1`. Nothing is sent anywhere. History > Clear history removes results and bests. If the browser blocks storage (some private windows), the app still works but forgets results when the tab closes.

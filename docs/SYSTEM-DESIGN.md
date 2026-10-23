@@ -21,8 +21,8 @@ flowchart LR
 | `js/engine.js` | `TypingTest`: holds target words, what was typed, the clock, keystroke counts, combo, per-second samples. No DOM, so it is unit-tested in Node | `stats.js` |
 | `js/stats.js` | Pure functions: character counts, gross and net WPM, accuracy, pacer position | — |
 | `js/words.js` | Endless word streams: common words (cited) and silly sentences (original) | — |
-| `js/storage.js` | Settings, run history (last 500), personal bests per mode, saved feedback. Writes are batched 300 ms after the last change | `localStorage` |
-| `js/chart.js` | Single-series SVG line chart with hover crosshair + tooltip | — |
+| `js/storage.js` | Settings, run history (last 500), personal bests per mode, saved feedback. Each run stores date, mode, net and raw WPM and accuracy, plus `pb: true` when it beat a best. Runs are written at once; setting changes are batched 300 ms and flushed on page hide. Every read and write is in `try/catch`, so with storage blocked or full the app keeps working from memory for that visit | `localStorage` |
+| `js/chart.js` | Single-series SVG line chart with hover crosshair + tooltip; axis-free sparkline for the history panel | — |
 | `js/effects.js` | Web Audio key ticks and canvas confetti, both off by default and confetti respects reduced motion | — |
 
 ## Main flows
@@ -30,7 +30,8 @@ flowchart LR
 1. **Start.** The page loads, applies the saved theme before first paint (inline script in `index.html`), builds the first 60 words, and puts the caret on the first letter. Nothing is timed yet.
 2. **Type.** Each `keydown` goes to `TypingTest.type()` or `.backspace()`. The engine starts the clock on the first letter. The UI repaints only the current word (and the previous one when a word is committed or reopened), then moves the caret with a CSS transform. The engine keeps at least 60 words ahead; new ones are appended to the DOM in one fragment.
 3. **Frame loop.** While running, `requestAnimationFrame` calls `tick()`, which records one sample per whole second and ends the test at exactly the chosen duration. The timer text changes once a second, live WPM every 500 ms, the ghost every 250 ms.
-4. **Results.** For 500 ms after results appear, Enter alone is ignored and stray letters are swallowed, so keys still in flight can't skip them. Tab alone no longer restarts a finished test; Tab then Enter within 1 s restarts at once. Esc toggles between the results and the finished text (the `reviewing` class hides the caret) without recomputing anything. The run is saved, the previous best is compared, the badge shows "New best! +N" or the gap, and both charts render on the next frame (they need the layout to measure width).
+4. **Results.** For 500 ms after results appear, Enter alone is ignored and stray letters are swallowed, so keys still in flight can't skip them. Tab alone no longer restarts a finished test; Tab then Enter within 1 s restarts at once. Esc toggles between the results and the finished text (the `reviewing` class hides the caret) without recomputing anything. The run is saved, the previous best is compared, the badge shows "New PB! +N wpm" or the gap, and both charts render on the next frame (they need the layout to measure width). A new PB turns the badge solid, pulses a soft ring twice and throws ten CSS sparks; with reduced motion only the badge shows. Full-screen confetti stays opt-in.
+5. **History.** The clock button in the top bar (or History on the results, or Settings > Data) opens the last 20 runs across all modes, newest first, with a sparkline of net WPM (oldest to newest, best-beating runs dotted). "Clear history" asks inline before deleting runs and bests.
 
 ## Definitions (how the numbers are computed)
 
@@ -75,7 +76,7 @@ Other rules:
 
 ## Testing
 
-- `npm test` runs `node --test` over `tests/`: scoring formulas, clock start/stop, combo, backspace rules, extra-letter cap, word supply, word streams.
+- `npm test` runs `node --test` over `tests/`: scoring formulas, clock start/stop, combo, backspace rules, extra-letter cap, word supply, word streams, and storage (bests per mode, PB flag, recent order, clearing; Node has no `localStorage`, so this also covers the in-memory fallback).
 - Manual: [MANUAL-REVIEW.md](MANUAL-REVIEW.md) covers feel, smoothness, dark mode and devices.
 - `npm run profile -- <wpm>` types a 15s test in headless Chrome with trusted key events and reports frame times, key-to-frame latency, caret lag, long tasks and layout shift. Results on 2026-10-23 (Chrome 156, MacBook):
 

@@ -197,6 +197,29 @@ main { flex: 1; width: 100%; max-width: 1000px; margin: 0 auto; padding: 4vh 24p
 }
 .badge.quiet { background: var(--surface); color: var(--ink-soft); font-weight: 500; }
 @keyframes pop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.06); } }
+/* New personal best: a soft ring pulses out twice and a few sparks fly off the badge. */
+.badge.pb { position: relative; background: var(--accent); color: #fff; animation: pop 400ms var(--ease), glow 1.4s 350ms var(--ease) 2; }
+.badge.pb strong { font-weight: 750; letter-spacing: 0.01em; }
+@keyframes glow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); } 100% { box-shadow: 0 0 0 14px transparent; } }
+.spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 2px;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  animation: spark 900ms 200ms var(--ease) forwards;
+}
+.spark:nth-child(3n) { background: var(--good); }
+.spark:nth-child(3n + 1) { background: var(--error); border-radius: 50%; }
+@keyframes spark {
+  0% { opacity: 1; transform: rotate(var(--a)) translateX(20px) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateX(calc(20px + var(--d))) scale(0.4); }
+}
 .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 26px 0 8px; }
 .facts > div { background: var(--surface); border-radius: 12px; padding: 12px 14px; }
 .facts dt { font-size: 13px; color: var(--ink-soft); }
@@ -218,6 +241,8 @@ main { flex: 1; width: 100%; max-width: 1000px; margin: 0 auto; padding: 4vh 24p
 .chart .dot { fill: var(--chart-line); stroke: var(--bg); stroke-width: 2; }
 .chart .err { fill: var(--error); stroke: var(--bg); stroke-width: 1.5; }
 .chart-empty { color: var(--untyped); font-size: 14px; }
+.chart .spark-fill { fill: var(--accent-soft); opacity: 0.6; }
+.chart .spark-pb { fill: var(--accent); stroke: var(--bg); stroke-width: 1.5; }
 .tip {
   position: absolute;
   left: 0;
@@ -246,6 +271,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
 button.primary kbd { background: transparent; color: #fff; border-color: rgb(255 255 255 / 0.5); margin-left: 6px; }
 button:active { transform: scale(0.97); }
 .danger { color: var(--error); }
+.actions .danger.solid { background: var(--error); border-color: var(--error); color: #fff; font-weight: 600; }
 
 /* Footer, feedback tab */
 .foot { text-align: center; padding: 16px; }
@@ -302,13 +328,30 @@ math[display="block"] { font-size: 1.45em; margin: 14px 0 6px; }
 .symbols li { margin: 3px 0; }
 .plain { font-style: italic; }
 
+/* History */
+dialog#history { width: min(520px, calc(100vw - 32px)); }
+.h-summary { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 0 6px; }
+.pb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.sparkline { min-height: 44px; }
+.h-scroll { max-height: min(46vh, 420px); overflow-y: auto; margin-top: 10px; border-top: 1px solid var(--line); }
+.h-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.h-table th { position: sticky; top: 0; background: var(--bg); text-align: left; font-size: 12px; font-weight: 500; color: var(--untyped); padding: 8px 6px 6px; }
+.h-table td { padding: 6px; border-top: 1px solid var(--line); color: var(--ink-soft); white-space: nowrap; }
+.h-table .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.h-table td.num:nth-child(3) { color: var(--ink); font-weight: 600; }
+.h-table tr.is-pb td.num:nth-child(3) { color: var(--accent); }
+.h-table tr.is-pb td.num:nth-child(3)::before { content: "★ "; font-size: 11px; }
+.actions.confirm { background: var(--error-soft); border-radius: 10px; padding: 8px 8px 8px 12px; }
+.actions.confirm .note { color: var(--ink); }
+
 .confetti { position: fixed; inset: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 10; }
 
 /* Phone */
 @media (max-width: 640px) {
   .bar { padding: 12px 16px; flex-wrap: wrap; }
   .modes { order: 3; width: 100%; justify-content: flex-start; margin: 0; }
-  .icon-btn#open-settings { margin-left: auto; }
+  .icon-btn#open-history { margin-left: auto; }
+  .h-table td:first-child { white-space: normal; }
   main { padding: 3vh 16px 16px; }
   .typing-box { font-size: 22px; }
   .facts { grid-template-columns: repeat(2, 1fr); }
@@ -319,4 +362,6 @@ math[display="block"] { font-size: 1.45em; margin: 14px 0 6px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+  .badge.pb { animation: none; }
+  .spark { display: none; }
 }

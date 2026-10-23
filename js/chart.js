@@ -79,6 +79,29 @@ export function lineChart(host, points, { height = 140, yLabel = "WPM", xLabel =
   svg.addEventListener("pointerleave", hide);
 }
 
+// A tiny trend line with no axes. points: [{ y, hot }]; hot points (personal bests) get a dot,
+// and the latest point always does.
+export function sparkline(host, points, { height = 44, label = "Trend" } = {}) {
+  host.replaceChildren();
+  if (points.length < 2) return;
+  const width = host.clientWidth || 300;
+  const pad = 5;
+  const ys = points.map((p) => p.y);
+  const lo = Math.min(...ys);
+  const hi = Math.max(...ys);
+  const sx = (i) => pad + (i / (points.length - 1)) * (width - 2 * pad);
+  const sy = (y) => pad + (height - 2 * pad) * (hi === lo ? 0.5 : 1 - (y - lo) / (hi - lo));
+  const svg = el("svg", { viewBox: `0 0 ${width} ${height}`, width, height, role: "img", "aria-label": label });
+  const d = points.map((p, i) => `${i ? "L" : "M"}${sx(i).toFixed(1)},${sy(p.y).toFixed(1)}`).join("");
+  svg.append(el("path", { d: `${d}L${sx(points.length - 1)},${height}L${sx(0)},${height}Z`, class: "spark-fill" }));
+  svg.append(el("path", { d, class: "line" }));
+  points.forEach((p, i) => {
+    const last = i === points.length - 1;
+    if (p.hot || last) svg.append(el("circle", { cx: sx(i), cy: sy(p.y), r: last ? 3.5 : 3, class: p.hot ? "spark-pb" : "dot" }));
+  });
+  host.append(svg);
+}
+
 function niceMax(v) {
   const step = v <= 50 ? 10 : v <= 150 ? 25 : 50;
   return Math.ceil(v / step) * step;

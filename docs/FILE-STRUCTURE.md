@@ -2,7 +2,7 @@
 
 ```
 FunTypingTest/
-├── index.html             The page: top bar, typing area, results, dialogs (settings, feedback, formulas)
+├── index.html             The page: top bar, typing area, results, dialogs (history, settings, feedback, formulas)
 ├── manifest.webmanifest   Name and icons for "Add to Home Screen"
 ├── package.json           `npm test` and `npm start` scripts (no dependencies)
 ├── css/
@@ -12,8 +12,8 @@ FunTypingTest/
 │   ├── engine.js          TypingTest state machine (no DOM)
 │   ├── stats.js           Pure formulas: WPM, accuracy, character counts, pacer
 │   ├── words.js           Common-word list (cited) and silly sentences (original)
-│   ├── storage.js         localStorage: settings, history, bests, feedback
-│   ├── chart.js           SVG line chart with hover tooltip
+│   ├── storage.js         localStorage: settings, history, bests, feedback (works from memory if storage is blocked)
+│   ├── chart.js           SVG line chart with hover tooltip, and the history sparkline
 │   └── effects.js         Optional key sounds and confetti
 ├── assets/
 │   ├── icon.svg           App icon (keycap + lightning bolt), also the favicon
@@ -23,7 +23,8 @@ FunTypingTest/
 │   └── profile.mjs        Smoothness profiler: types a test in headless Chrome, reports frame and caret stats
 ├── tests/
 │   ├── stats.test.js      Formula tests
-│   └── engine.test.js     Engine and word-stream tests
+│   ├── engine.test.js     Engine and word-stream tests
+│   └── storage.test.js    Personal bests per mode, history order, clearing
 ├── docs/
 │   ├── INSTRUCTIONS.md    Setup, run, use
 │   ├── SYSTEM-DESIGN.md   Architecture, formulas, decisions, limits

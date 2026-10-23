@@ -37,6 +37,9 @@
         <button role="radio" data-source="silly">Silly sentences</button>
       </div>
     </nav>
+    <button class="icon-btn" id="open-history" title="History" aria-label="History">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7.5V12l3 2"/></svg>
+    </button>
     <button class="icon-btn" id="open-settings" title="Settings (⌘,)" aria-label="Settings">
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.5 7.5 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1L15 3.5h-4L10.6 6a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.5 7.5 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
     </button>
@@ -67,7 +70,7 @@
           </div>
           <p class="sub-stats"><span><b id="r-acc"></b> accuracy</span><span title="Gross WPM: every typed character, mistakes included"><b id="r-gross"></b> raw wpm</span></p>
         </div>
-        <div id="r-badge" class="badge" hidden></div>
+        <div id="r-badge" class="badge" role="status" hidden></div>
       </div>
       <dl class="facts">
         <div><dt>Duration</dt><dd id="r-duration"></dd></div>
@@ -81,6 +84,7 @@
       <div id="r-history" class="chart"></div>
       <div class="actions">
         <span class="note"><kbd>Esc</kbd> see your text</span>
+        <button type="button" id="results-history">History</button>
         <button id="again" class="primary">Restart <kbd>Tab</kbd>+<kbd>Enter</kbd></button>
       </div>
     </section>
@@ -120,8 +124,34 @@
       <fieldset>
         <legend>Data</legend>
         <p class="note">Your results stay in this browser only. Nothing is sent anywhere.</p>
-        <button type="button" id="clear-history" class="danger">Clear history and bests</button>
+        <button type="button" id="settings-history">View or clear history</button>
       </fieldset>
+    </form>
+  </dialog>
+
+  <dialog id="history" aria-labelledby="history-title">
+    <form method="dialog" class="sheet">
+      <header><h2 id="history-title">History</h2><button class="icon-btn close" value="close" aria-label="Close">✕</button></header>
+      <div id="h-empty" class="note">No finished tests yet. Your last 20 runs will show up here.</div>
+      <div id="h-body">
+        <p class="note h-summary"><span id="h-summary"></span><span class="legend"><i class="pb-dot" aria-hidden="true"></i>new best</span></p>
+        <div id="h-spark" class="chart sparkline"></div>
+        <div class="h-scroll">
+          <table class="h-table">
+            <thead><tr><th scope="col">When</th><th scope="col">Mode</th><th scope="col" class="num">Net</th><th scope="col" class="num">Raw</th><th scope="col" class="num">Acc</th></tr></thead>
+            <tbody id="h-rows"></tbody>
+          </table>
+        </div>
+        <div class="actions" id="h-actions">
+          <span class="note">Saved in this browser only.</span>
+          <button type="button" id="h-clear" class="danger">Clear history</button>
+        </div>
+        <div class="actions confirm" id="h-confirm" hidden>
+          <span class="note" id="h-confirm-text" role="alert"></span>
+          <button type="button" id="h-cancel">Cancel</button>
+          <button type="button" id="h-clear-yes" class="danger solid">Clear</button>
+        </div>
+      </div>
     </form>
   </dialog>
 

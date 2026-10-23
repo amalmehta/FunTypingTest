@@ -13,7 +13,9 @@ What the unit tests can't check. Do these in a real browser window (not a backgr
 - [ ] Chrome DevTools > Performance: record a test; no long tasks (>50 ms) while typing.
 
 ## Fun
-- [ ] Beating your best shows "New best! +N wpm"; missing it shows the gap kindly.
+- [ ] Beating your best shows "New PB! +N wpm" with a soft pulse and a few sparks; missing it shows the gap kindly.
+- [ ] With Reduce Motion on, a new PB shows the badge only: no pulse, no sparks.
+- [ ] History (clock button): last 20 runs newest first, sparkline matches, ★ on PB runs; Clear history asks first and Cancel keeps everything.
 - [ ] With Ghost pacer on and a best saved, the grey dot moves at your best pace.
 - [ ] Combo counter appears at 10 and pulses at 25, 50, 75…
 - [ ] Settings > Key sounds: ticks are quiet and pleasant; mistakes sound different.

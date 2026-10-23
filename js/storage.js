@@ -22,7 +22,15 @@ function load() {
   try {
     const data = JSON.parse(localStorage.getItem(KEY));
     if (!data) return empty();
-    return { ...empty(), ...data, settings: { ...DEFAULT_SETTINGS, ...data.settings } };
+    const base = empty();
+    return {
+      ...base,
+      ...data,
+      settings: { ...DEFAULT_SETTINGS, ...data.settings },
+      runs: Array.isArray(data.runs) ? data.runs : base.runs,
+      bests: data.bests && typeof data.bests === "object" ? data.bests : base.bests,
+      feedback: Array.isArray(data.feedback) ? data.feedback : base.feedback,
+    };
   } catch (err) {
     console.warn("[storage] could not read saved data, starting fresh", err);
     return empty();
@@ -31,18 +39,28 @@ function load() {
 
 let state = load();
 let saveTimer = 0;
+let saveWarned = false;
 
-// Writes are batched and run off the keystroke path.
-function save() {
+// Storage can be missing or full (private windows, blocked site data); the app then keeps
+// working from memory for this visit.
+function write() {
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state));
-    } catch (err) {
-      console.warn("[storage] could not save", err);
-    }
-  }, 300);
+  saveTimer = 0;
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch (err) {
+    if (!saveWarned) console.warn("[storage] could not save; keeping results for this visit only", err);
+    saveWarned = true;
+  }
 }
+
+// Setting changes are batched; finished runs are written at once so closing the tab can't lose them.
+function save(now = false) {
+  if (now) return write();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(write, 300);
+}
+globalThis.addEventListener?.("pagehide", () => { if (saveTimer) write(); });
 
 export const modeKey = (source, duration) => `${source}-${duration}`;
 
@@ -54,16 +72,21 @@ export const store = {
   },
   best: (key) => state.bests[key] ?? null,
   // Records a run; returns the previous best so the UI can say by how much it was beaten.
+  // A run that beats an existing best is flagged `pb` so the history can mark it.
   addRun(run) {
     const key = modeKey(run.source, run.duration);
     const previous = state.bests[key] ?? null;
-    state.runs.push(run);
+    const isBest = run.wpm > (previous?.wpm ?? 0);
+    state.runs.push(previous && isBest ? { ...run, pb: true } : run);
     if (state.runs.length > MAX_RUNS) state.runs.splice(0, state.runs.length - MAX_RUNS);
-    if (run.wpm > (previous?.wpm ?? 0)) state.bests[key] = { wpm: run.wpm, ts: run.ts };
-    save();
+    if (isBest) state.bests[key] = { wpm: run.wpm, ts: run.ts };
+    save(true);
     return previous;
   },
   runs: (key) => state.runs.filter((r) => modeKey(r.source, r.duration) === key),
+  // The last n runs across every mode, oldest first.
+  recent: (n) => state.runs.slice(-n),
+  count: () => state.runs.length,
   addFeedback(text) {
     state.feedback.push({ ts: Date.now(), text });
     save();
@@ -71,6 +94,6 @@ export const store = {
   clearHistory() {
     state.runs = [];
     state.bests = {};
-    save();
+    save(true);
   },
 };
