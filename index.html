@@ -26,17 +26,6 @@
       <img src="assets/icon.svg" alt="" width="28" height="28">
       <span>Fun Typing Test</span>
     </a>
-    <nav class="modes" aria-label="Test options">
-      <div class="seg" role="radiogroup" aria-label="Duration" id="durations">
-        <button role="radio" data-duration="15">15s</button>
-        <button role="radio" data-duration="30">30s</button>
-        <button role="radio" data-duration="60">60s</button>
-      </div>
-      <div class="seg" role="radiogroup" aria-label="Text" id="sources">
-        <button role="radio" data-source="words">Words</button>
-        <button role="radio" data-source="silly">Silly sentences</button>
-      </div>
-    </nav>
     <button class="icon-btn" id="open-history" title="History" aria-label="History">
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 7.5V12l3 2"/></svg>
     </button>
@@ -46,6 +35,34 @@
   </header>
 
   <main>
+    <nav class="modes" id="modes" aria-label="Test mode">
+      <div class="seg" id="extras" aria-label="Extras for common words">
+        <button type="button" data-flag="punctuation" aria-pressed="false" title="Capitals and punctuation"><b aria-hidden="true">@</b> punctuation</button>
+        <button type="button" data-flag="numbers" aria-pressed="false" title="Mix in numbers"><b aria-hidden="true">#</b> numbers</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Mode">
+        <button role="radio" data-mode="time">time</button>
+        <button role="radio" data-mode="words">words</button>
+        <button role="radio" data-mode="quote">quote</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Seconds" data-for="time">
+        <button role="radio" data-duration="15">15</button>
+        <button role="radio" data-duration="30">30</button>
+        <button role="radio" data-duration="60">60</button>
+        <button role="radio" data-duration="120">120</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Number of words" data-for="words">
+        <button role="radio" data-count="10">10</button>
+        <button role="radio" data-count="25">25</button>
+        <button role="radio" data-count="50">50</button>
+        <button role="radio" data-count="100">100</button>
+      </div>
+      <div class="seg" role="radiogroup" aria-label="Text" id="sources">
+        <button role="radio" data-source="words">common</button>
+        <button role="radio" data-source="silly">silly</button>
+      </div>
+    </nav>
+
     <section id="test" class="view">
       <div class="live" aria-live="off">
         <span id="timer" class="timer">30</span>
@@ -72,6 +89,7 @@
         </div>
         <div id="r-badge" class="badge" role="status" hidden></div>
       </div>
+      <p id="r-quote" class="quote-src" hidden></p>
       <dl class="facts">
         <div><dt>Duration</dt><dd id="r-duration"></dd></div>
         <div><dt>Best combo</dt><dd id="r-combo"></dd></div>

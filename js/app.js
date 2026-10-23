@@ -1,7 +1,8 @@
 // UI: wires the keyboard, the DOM and storage to the TypingTest engine.
 import { TypingTest } from "./engine.js";
 import { pacerPosition } from "./stats.js";
-import { SOURCES } from "./words.js";
+import { SOURCES, decorate } from "./words.js";
+import { randomQuote } from "./quotes.js";
 import { store, modeKey } from "./storage.js";
 import { lineChart, sparkline } from "./chart.js";
 import { keySound, confetti } from "./effects.js";
@@ -11,11 +12,13 @@ const ui = {
   test: $("test"), results: $("results"), box: $("typing-box"), words: $("words"),
   caret: $("caret"), ghost: $("ghost"), input: $("hidden-input"), timer: $("timer"),
   liveWpm: $("live-wpm"), combo: $("combo"), comboN: $("combo-n"), pbHint: $("pb-hint"), hint: $("hint"),
+  modes: $("modes"),
 };
 const TEST_HINT = ui.hint.innerHTML;
 const REVIEW_HINT = "Your finished run · <kbd>Esc</kbd> back to results · <kbd>Tab</kbd>+<kbd>Enter</kbd> restart";
 
 let test = null;
+let quote = null; // the quote being typed, in quote mode
 let wordEls = [];
 let scrollY = 0;
 let lastLiveUpdate = 0;
@@ -28,7 +31,26 @@ let tabAt = -Infinity;
 const TAB_ENTER_MS = 1000; // Enter this soon after Tab (or while holding it) restarts, skipping the guard
 
 const settings = () => store.settings();
-const currentKey = () => modeKey(settings().source, settings().duration);
+const currentKey = () => modeKey(currentMode());
+
+// The settings that define the mode, as saved with each run. Only the ones that apply are kept.
+function currentMode() {
+  const s = settings();
+  if (s.mode === "quote") return { mode: "quote" };
+  const m = { mode: s.mode, source: s.source };
+  if (s.mode === "words") m.wordCount = s.wordCount;
+  else m.duration = s.duration;
+  if (s.source === "words") Object.assign(m, { punctuation: s.punctuation, numbers: s.numbers });
+  return m;
+}
+
+// "30s · Common +punct", "25 words · Silly", "Quote". Runs saved before modes existed are timed.
+function describeMode(m) {
+  if (m.mode === "quote") return "Quote";
+  const amount = m.mode === "words" ? `${m.wordCount} words` : `${m.duration}s`;
+  const flags = `${m.punctuation ? " +punct" : ""}${m.numbers ? " +nums" : ""}`;
+  return `${amount} · ${m.source === "silly" ? "Silly" : "Common"}${flags}`;
+}
 
 // ---------- Theme and settings ----------
 
@@ -38,8 +60,17 @@ function applySettings() {
   else document.documentElement.dataset.theme = s.theme;
   ui.caret.classList.toggle("smooth", s.smoothCaret);
   ui.liveWpm.hidden = !s.liveWpm;
-  for (const b of document.querySelectorAll("[data-duration]")) b.setAttribute("aria-checked", String(+b.dataset.duration === s.duration));
-  for (const b of document.querySelectorAll("[data-source]")) b.setAttribute("aria-checked", String(b.dataset.source === s.source));
+  const check = (attr, value) => {
+    for (const b of ui.modes.querySelectorAll(`[data-${attr}]`)) b.setAttribute("aria-checked", String(b.dataset[attr] === String(value)));
+  };
+  check("mode", s.mode);
+  check("duration", s.duration);
+  check("count", s.wordCount);
+  check("source", s.source);
+  for (const b of ui.modes.querySelectorAll("[data-flag]")) b.setAttribute("aria-pressed", String(s[b.dataset.flag]));
+  for (const g of ui.modes.querySelectorAll("[data-for]")) g.hidden = g.dataset.for !== s.mode;
+  $("sources").hidden = s.mode === "quote";
+  $("extras").hidden = s.mode === "quote" || s.source !== "words";
   for (const input of document.querySelectorAll("[data-setting]")) {
     const v = s[input.dataset.setting];
     if (input.type === "checkbox") input.checked = v;
@@ -92,9 +123,11 @@ function appendWords(fromIndex) {
 
 // Positions the caret at the next letter and scrolls so the current line is never below line 2.
 function placeCaret() {
-  const el = wordEls[test.index];
+  // A finished fixed text has its index one past the last word; the caret then sits at its end.
+  const i = Math.min(test.index, wordEls.length - 1);
+  const el = wordEls[i];
   const letters = el.children;
-  const at = test.typed[test.index].length;
+  const at = i < test.index ? letters.length : test.typed[i].length;
   let x = el.offsetLeft;
   if (at < letters.length) x += letters[at].offsetLeft;
   else if (letters.length) x += letters[letters.length - 1].offsetLeft + letters[letters.length - 1].offsetWidth;
@@ -146,21 +179,44 @@ function showCombo() {
 
 // ---------- Test lifecycle ----------
 
+function makeTest() {
+  const s = settings();
+  quote = null;
+  if (s.mode === "quote") {
+    quote = randomQuote();
+    return new TypingTest({ words: quote.text.split(" ") });
+  }
+  let next = SOURCES[s.source].stream();
+  if (s.source === "words") next = decorate(next, s);
+  if (s.mode === "words") return new TypingTest({ words: Array.from({ length: s.wordCount }, next) });
+  return new TypingTest({ nextWord: next, durationMs: s.duration * 1000 });
+}
+
+// Seconds left in a timed test, words done in a fixed one.
+function progressText(now) {
+  if (test.fixed) return `${Math.min(test.index, test.targets.length)}/${test.targets.length}`;
+  return String(Math.ceil((test.durationMs - test.elapsed(now)) / 1000));
+}
+
+function setRunning(on) {
+  ui.box.classList.toggle("running", on);
+  ui.modes.classList.toggle("dim", on);
+}
+
 function newTest() {
   cancelAnimationFrame(frame);
-  const s = settings();
-  test = new TypingTest({ nextWord: SOURCES[s.source].stream(), durationMs: s.duration * 1000 });
+  test = makeTest();
   wordEls = [];
   scrollY = 0;
   caretY = -1;
   ui.words.replaceChildren();
   ui.words.style.transform = "";
   appendWords(0);
-  ui.timer.textContent = s.duration;
+  ui.timer.textContent = progressText(0);
   ui.liveWpm.textContent = "";
   ui.combo.hidden = true;
   ui.ghost.hidden = true;
-  ui.box.classList.remove("running");
+  setRunning(false);
   const best = store.best(currentKey());
   ui.pbHint.textContent = best ? `Best ${Math.round(best.wpm)} wpm` : "";
   ui.results.hidden = true;
@@ -179,8 +235,8 @@ function focusBox() {
 
 function loop(now) {
   test.tick(now);
-  const remaining = Math.ceil((test.durationMs - test.elapsed(now)) / 1000);
-  if (ui.timer.textContent !== String(remaining)) ui.timer.textContent = remaining;
+  const progress = progressText(now);
+  if (ui.timer.textContent !== progress) ui.timer.textContent = progress;
   if (settings().liveWpm && now - lastLiveUpdate > 500 && test.elapsed(now) >= 1000) {
     lastLiveUpdate = now;
     ui.liveWpm.textContent = `${Math.round(test.stats(now).wpm)} wpm`;
@@ -199,17 +255,22 @@ function onType(char) {
   const known = test.targets.length;
   const result = test.type(char, performance.now());
   if (!result) return;
-  if (wasReady && test.status === "running") {
-    ui.box.classList.add("running");
+  if (wasReady && test.status !== "ready") {
+    setRunning(true);
     lastLiveUpdate = lastGhostUpdate = 0;
     frame = requestAnimationFrame(loop);
   }
   if (test.targets.length > known) appendWords(known);
   paintWord(wordEls[before], before);
-  if (test.index !== before) paintWord(wordEls[test.index], test.index);
+  if (test.index !== before && wordEls[test.index]) paintWord(wordEls[test.index], test.index);
   placeCaret();
   if (settings().sounds) keySound(result !== "incorrect");
   showCombo();
+  // A fixed text ends on a keystroke, not in the frame loop.
+  if (test.status === "done") {
+    cancelAnimationFrame(frame);
+    showResults();
+  }
 }
 
 function onBackspace(wholeWord) {
@@ -225,8 +286,7 @@ function showResults() {
   const set = settings();
   const run = {
     ts: Date.now(),
-    source: set.source,
-    duration: set.duration,
+    ...currentMode(),
     wpm: s.wpm,
     gross: s.gross,
     accuracy: s.accuracy,
@@ -238,7 +298,9 @@ function showResults() {
   $("r-wpm").textContent = Math.round(s.wpm);
   $("r-gross").textContent = Math.round(s.gross);
   $("r-acc").textContent = `${Math.round(s.accuracy)}%`;
-  $("r-duration").textContent = `${Math.round(s.elapsed / 1000)}s`;
+  $("r-duration").textContent = test.fixed ? `${(s.elapsed / 1000).toFixed(1)}s` : `${Math.round(s.elapsed / 1000)}s`;
+  $("r-quote").hidden = !quote;
+  $("r-quote").textContent = quote ? `“${quote.text}” — ${quote.by}` : "";
   $("r-combo").textContent = s.maxCombo;
   const c = s.chars;
   $("r-correct").textContent = c.correct;
@@ -260,7 +322,7 @@ function showResults() {
     badge.classList.add("quiet");
   }
 
-  ui.box.classList.remove("running");
+  setRunning(false);
   showResultsView();
   resultsShownAt = performance.now();
   // Charts need the results view laid out to measure their width.
@@ -298,10 +360,9 @@ function celebrate(badge, gain) {
 }
 
 function modeHistoryChart() {
-  const set = settings();
   const all = store.runs(currentKey());
   const recent = all.slice(-20);
-  $("r-history-title").textContent = `Your last ${recent.length} tests (${set.duration}s, ${SOURCES[set.source].label.toLowerCase()})`;
+  $("r-history-title").textContent = `Your last ${recent.length} tests (${describeMode(currentMode())})`;
   const first = all.length - recent.length + 1;
   lineChart($("r-history"), recent.map((r, i) => ({
     x: first + i,
@@ -378,12 +439,24 @@ document.addEventListener("keydown", (e) => {
 ui.input.addEventListener("input", () => { ui.input.value = ""; });
 ui.box.addEventListener("pointerdown", (e) => { e.preventDefault(); focusBox(); });
 
-for (const b of document.querySelectorAll("[data-duration]")) {
-  b.addEventListener("click", () => { store.setSetting("duration", +b.dataset.duration); applySettings(); newTest(); });
+// Any change to the mode throws away the current test and starts a fresh one.
+function chooseMode(changes) {
+  for (const [name, value] of Object.entries(changes)) store.setSetting(name, value);
+  applySettings();
+  newTest();
 }
-for (const b of document.querySelectorAll("[data-source]")) {
-  b.addEventListener("click", () => { store.setSetting("source", b.dataset.source); applySettings(); newTest(); });
-}
+ui.modes.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  const d = b.dataset;
+  if (d.mode) chooseMode({ mode: d.mode });
+  else if (d.duration) chooseMode({ mode: "time", duration: +d.duration });
+  else if (d.count) chooseMode({ mode: "words", wordCount: +d.count });
+  else if (d.source) chooseMode({ source: d.source });
+  else if (d.flag) chooseMode({ [d.flag]: !settings()[d.flag] });
+});
+// Keep focus in the typing box so the next key types instead of pressing the button.
+ui.modes.addEventListener("pointerdown", (e) => { if (e.target.closest("button")) e.preventDefault(); });
 $("again").addEventListener("click", newTest);
 
 let resizeTimer = 0;
@@ -453,7 +526,7 @@ function renderHistory() {
     }
     tr.append(
       cell(when(r.ts)),
-      cell(`${r.duration}s · ${r.source === "silly" ? "Silly" : "Words"}`),
+      cell(describeMode(r)),
       net,
       cell(r.gross == null ? "–" : Math.round(r.gross), "num"),
       cell(`${Math.round(r.accuracy)}%`, "num"),

@@ -9,9 +9,10 @@ FunTypingTest/
 │   └── style.css          All styles; light and dark color tokens at the top
 ├── js/
 │   ├── app.js             UI: input, rendering, caret, frame loop, results, dialogs
-│   ├── engine.js          TypingTest state machine (no DOM)
+│   ├── engine.js          TypingTest state machine (no DOM): timed or fixed-text tests
 │   ├── stats.js           Pure formulas: WPM, accuracy, character counts, pacer
-│   ├── words.js           Common-word list (cited) and silly sentences (original)
+│   ├── words.js           Common-word list (top 100 cited, plus 120 everyday words), silly sentences (original), punctuation/numbers toggles
+│   ├── quotes.js          Short public-domain quotes with attribution, for quote mode
 │   ├── storage.js         localStorage: settings, history, bests, feedback (works from memory if storage is blocked)
 │   ├── chart.js           SVG line chart with hover tooltip, and the history sparkline
 │   └── effects.js         Optional key sounds and confetti
@@ -23,8 +24,8 @@ FunTypingTest/
 │   └── profile.mjs        Smoothness profiler: types a test in headless Chrome, reports frame and caret stats
 ├── tests/
 │   ├── stats.test.js      Formula tests
-│   ├── engine.test.js     Engine and word-stream tests
-│   └── storage.test.js    Personal bests per mode, history order, clearing
+│   ├── engine.test.js     Engine (timed and fixed texts), word streams, toggles, quotes
+│   └── storage.test.js    Personal bests per mode, mode keys, history order, clearing
 ├── docs/
 │   ├── INSTRUCTIONS.md    Setup, run, use
 │   ├── SYSTEM-DESIGN.md   Architecture, formulas, decisions, limits

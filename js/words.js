@@ -1,6 +1,6 @@
 // Text sources for a test. Each source returns an endless stream of words.
 
-// The 100 most common English words in the Oxford English Corpus, in rank order.
+// The 100 most common English words in the Oxford English Corpus, in rank order, then more.
 // Source: https://en.wikipedia.org/wiki/Most_common_words_in_English (checked 2026-10-22).
 export const COMMON_WORDS = [
   "the", "be", "to", "of", "and", "a", "in", "that", "have", "I",
@@ -13,6 +13,19 @@ export const COMMON_WORDS = [
   "than", "then", "now", "look", "only", "come", "its", "over", "think", "also",
   "back", "after", "use", "two", "how", "our", "work", "first", "well", "way",
   "even", "new", "want", "because", "any", "these", "give", "day", "most", "us",
+  // 120 more everyday words, chosen for this app (not ranked).
+  "very", "through", "long", "where", "much", "should", "here", "between", "both", "life",
+  "being", "under", "never", "home", "same", "last", "while", "might", "great", "old",
+  "off", "down", "own", "still", "world", "place", "another", "around", "right", "few",
+  "keep", "small", "high", "every", "large", "need", "big", "find", "next", "again",
+  "hand", "part", "house", "school", "country", "point", "water", "city", "light", "night",
+  "room", "word", "line", "name", "story", "group", "head", "family", "number", "friend",
+  "eye", "face", "book", "change", "early", "open", "begin", "end", "turn", "follow",
+  "start", "show", "move", "play", "run", "help", "hold", "bring", "write", "read",
+  "learn", "feel", "leave", "call", "ask", "try", "tell", "live", "stand", "sit",
+  "real", "best", "sure", "free", "hard", "late", "young", "short", "clear", "simple",
+  "always", "often", "later", "together", "almost", "enough", "already", "soon", "far", "less",
+  "music", "garden", "river", "street", "morning", "table", "window", "paper", "money", "idea",
 ];
 
 // Original nonsense written for this app. Not quotes, not facts.
@@ -70,6 +83,31 @@ export function sillySentenceStream(random = Math.random) {
       queue = order.join(" ").split(" ");
     }
     return queue.shift();
+  };
+}
+
+// Wraps a word stream for the optional toggles: punctuation turns it into capitalized sentences
+// with commas, quotes and end marks; numbers swaps in a 1 to 4 digit number about one word in eight.
+export function decorate(next, { punctuation = false, numbers = false } = {}, random = Math.random) {
+  if (!punctuation && !numbers) return next;
+  const pick = (list) => list[Math.floor(random() * list.length)];
+  let left = 0; // words until the current sentence ends
+  return () => {
+    let word = numbers && random() < 0.125 ? String(Math.floor(random() * 10 ** (1 + Math.floor(random() * 4)))) : next();
+    if (!punctuation) return word;
+    if (left === 0) {
+      left = 4 + Math.floor(random() * 9);
+      word = word[0].toUpperCase() + word.slice(1);
+    }
+    left--;
+    if (left === 0) return word + pick([".", ".", ".", "?", "!"]);
+    const r = random();
+    if (r < 0.1) return `${word},`;
+    if (r < 0.13) return word + pick([";", ":"]);
+    if (r < 0.16) return `"${word}"`;
+    if (r < 0.18) return `(${word})`;
+    if (r < 0.2) return `${word}-${next()}`;
+    return word;
   };
 }
 

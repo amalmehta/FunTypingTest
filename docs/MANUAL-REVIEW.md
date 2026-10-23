@@ -9,7 +9,9 @@ What the unit tests can't check. Do these in a real browser window (not a backgr
 - [ ] Results appear with a short fade; no layout jump when the charts draw.
 - [ ] Hover the charts: the crosshair and tooltip follow the pointer smoothly.
 - [ ] Red dots on the per-second chart sit on the seconds where you made mistakes.
-- [ ] Switching 15/30/60 and Words/Silly restarts instantly.
+- [ ] Switching time/words/quote, 15–120 s, 10–100 words, common/silly and the @/# toggles restarts instantly, even mid-test or from the results.
+- [ ] Words and quote tests end the moment the last word is right; the results show the time to one decimal, and quotes show who said it.
+- [ ] Reload: the last chosen mode and toggles come back.
 - [ ] Chrome DevTools > Performance: record a test; no long tasks (>50 ms) while typing.
 
 ## Fun
@@ -20,7 +22,7 @@ What the unit tests can't check. Do these in a real browser window (not a backgr
 - [ ] Combo counter appears at 10 and pulses at 25, 50, 75…
 - [ ] Settings > Key sounds: ticks are quiet and pleasant; mistakes sound different.
 - [ ] Settings > Confetti: shows on a new best only; nothing if your OS has Reduce Motion on.
-- [ ] Silly sentences are fun to type.
+- [ ] Silly sentences are fun to type; punctuation and numbers read naturally; quotes are attributed correctly.
 
 ## Looks (check in both light and dark)
 - [ ] Main screen, results, Settings, Feedback, "How is WPM calculated?" all readable in light and dark.

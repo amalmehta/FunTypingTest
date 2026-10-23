@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { TypingTest, MAX_EXTRA_LETTERS } from "../js/engine.js";
-import { commonWordStream, sillySentenceStream, COMMON_WORDS } from "../js/words.js";
+import { commonWordStream, sillySentenceStream, decorate, COMMON_WORDS } from "../js/words.js";
+import { QUOTES, randomQuote } from "../js/quotes.js";
 
 const fixed = (...words) => {
   let i = 0;
@@ -121,4 +122,75 @@ test("word streams produce real words with no immediate repeats", () => {
   }
   const silly = sillySentenceStream();
   for (let i = 0; i < 1000; i++) assert.ok(silly().length > 0);
+});
+
+test("a fixed text ends when its last word is typed right, and is scored on the time taken", () => {
+  const t = new TypingTest({ words: ["abcd", "abcd"] });
+  assert.equal(t.targets.length, 2);
+  const end = typeAll(t, "abcd abcd", 0, 1000); // last key at 8 s
+  assert.equal(t.status, "done");
+  assert.equal(t.elapsed(end + 5000), 8000);
+  const s = t.stats(end + 5000);
+  assert.equal(s.chars.typed, 9);
+  assert.equal(Math.round(s.gross * 10), Math.round((9 / 5 / (8 / 60)) * 10));
+  assert.equal(s.wpm, s.gross);
+  assert.equal(t.samples.length, 8);
+  assert.equal(t.type("x", end + 1), null);
+});
+
+test("a fixed text with a wrong last word ends on the space, counting what was missed", () => {
+  const t = new TypingTest({ words: ["cat", "dog"] });
+  typeAll(t, "cat do ", 0, 500);
+  assert.equal(t.status, "done");
+  const s = t.stats(10000);
+  assert.equal(s.chars.missed, 1);
+  assert.equal(s.elapsed, 3000);
+  assert.equal(t.samples.at(-1).second, 3);
+});
+
+test("a fixed text records a sample for the final part-second", () => {
+  const t = new TypingTest({ words: ["hi"] });
+  t.type("h", 0);
+  t.type("i", 2500);
+  assert.deepEqual(t.samples.map((p) => p.second), [1, 2, 2.5]);
+  assert.equal(t.elapsed(9999), 2500);
+});
+
+test("a fixed text has no clock limit and never adds words", () => {
+  const t = new TypingTest({ words: ["a", "b"] });
+  t.type("a", 0);
+  t.tick(10 * 60 * 1000);
+  assert.equal(t.status, "running");
+  assert.equal(t.targets.length, 2);
+});
+
+test("punctuation makes capitalized sentences that end with a mark", () => {
+  const next = decorate(commonWordStream(), { punctuation: true });
+  const words = Array.from({ length: 400 }, next);
+  assert.match(words[0], /^[A-Z0-9"(]/);
+  const text = words.join(" ");
+  assert.match(text, /[.?!]/);
+  assert.match(text, /,/);
+  for (const m of text.matchAll(/[.?!] (\S)/g)) assert.match(m[1], /[A-Z0-9"(]/);
+});
+
+test("numbers mixes in short numbers, and no toggles leaves words alone", () => {
+  const words = Array.from({ length: 400 }, decorate(commonWordStream(), { numbers: true }));
+  const nums = words.filter((w) => /^\d+$/.test(w));
+  assert.ok(nums.length > 10 && nums.length < 120);
+  assert.ok(nums.every((n) => n.length <= 4));
+  const plain = decorate(commonWordStream(), {});
+  for (let i = 0; i < 100; i++) assert.ok(COMMON_WORDS.includes(plain()));
+});
+
+test("the word list and quotes are big enough and typeable", () => {
+  assert.ok(new Set(COMMON_WORDS).size >= 200);
+  assert.equal(new Set(COMMON_WORDS).size, COMMON_WORDS.length);
+  assert.ok(QUOTES.length >= 40);
+  for (const q of QUOTES) {
+    assert.match(q.text, /^[\x20-\x7e]+$/, q.text); // plain keyboard characters only
+    assert.doesNotMatch(q.text, /  |^ | $/);
+    assert.ok(q.by.length > 0);
+  }
+  assert.notEqual(randomQuote(), randomQuote());
 });

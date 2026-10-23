@@ -9,7 +9,7 @@ flowchart LR
   K[Keyboard / on-screen keyboard] --> A[app.js<br/>UI + input]
   A -->|type / backspace / tick| E[engine.js<br/>TypingTest state machine]
   E --> S[stats.js<br/>pure formulas]
-  W[words.js<br/>text sources] --> E
+  W[words.js + quotes.js<br/>text sources] --> E
   A --> C[chart.js<br/>SVG line charts]
   A --> FX[effects.js<br/>sounds + confetti, opt-in]
   A <--> ST[storage.js<br/>localStorage]
@@ -18,18 +18,19 @@ flowchart LR
 | Component | Job | Talks to |
 |---|---|---|
 | `js/app.js` | Reads keys, paints only the words that changed, moves the caret and ghost, runs the frame loop, shows results, wires settings and feedback dialogs | everything |
-| `js/engine.js` | `TypingTest`: holds target words, what was typed, the clock, keystroke counts, combo, per-second samples. No DOM, so it is unit-tested in Node | `stats.js` |
+| `js/engine.js` | `TypingTest`: holds target words, what was typed, the clock, keystroke counts, combo, per-second samples. Timed tests pull from an endless stream until time is up; fixed texts (word count, quote) get a word list and end on the last word. No DOM, so it is unit-tested in Node | `stats.js` |
 | `js/stats.js` | Pure functions: character counts, gross and net WPM, accuracy, pacer position | — |
-| `js/words.js` | Endless word streams: common words (cited) and silly sentences (original) | — |
+| `js/words.js` | Endless word streams: 220 common words (top 100 cited) and silly sentences (original), plus `decorate()` for the punctuation and numbers toggles | — |
+| `js/quotes.js` | 56 short public-domain quotes with attribution, plain ASCII so every character is typeable | — |
 | `js/storage.js` | Settings, run history (last 500), personal bests per mode, saved feedback. Each run stores date, mode, net and raw WPM and accuracy, plus `pb: true` when it beat a best. Runs are written at once; setting changes are batched 300 ms and flushed on page hide. Every read and write is in `try/catch`, so with storage blocked or full the app keeps working from memory for that visit | `localStorage` |
 | `js/chart.js` | Single-series SVG line chart with hover crosshair + tooltip; axis-free sparkline for the history panel | — |
 | `js/effects.js` | Web Audio key ticks and canvas confetti, both off by default and confetti respects reduced motion | — |
 
 ## Main flows
 
-1. **Start.** The page loads, applies the saved theme before first paint (inline script in `index.html`), builds the first 60 words, and puts the caret on the first letter. Nothing is timed yet.
+1. **Start.** The page loads, applies the saved theme before first paint (inline script in `index.html`), builds the text for the saved mode (60 words ahead for timed tests, the whole list for word-count and quote tests), and puts the caret on the first letter. Nothing is timed yet. Any click in the mode picker saves the choice and builds a brand-new test, throwing away the current one, so no half-finished state carries over. The picker fades while a test runs.
 2. **Type.** Each `keydown` goes to `TypingTest.type()` or `.backspace()`. The engine starts the clock on the first letter. The UI repaints only the current word (and the previous one when a word is committed or reopened), then moves the caret with a CSS transform. The engine keeps at least 60 words ahead; new ones are appended to the DOM in one fragment.
-3. **Frame loop.** While running, `requestAnimationFrame` calls `tick()`, which records one sample per whole second and ends the test at exactly the chosen duration. The timer text changes once a second, live WPM every 500 ms, the ghost every 250 ms.
+3. **Frame loop.** While running, `requestAnimationFrame` calls `tick()`, which records one sample per whole second and ends a timed test at exactly the chosen duration. The timer text changes once a second, live WPM every 500 ms, the ghost every 250 ms. In word-count and quote tests the timer shows words done (`12/50`) instead, and the test ends on a keystroke: as soon as the last word is typed exactly, or on the space after it if it has a mistake. The elapsed time is first key to last key, and the last part-second gets its own chart sample.
 4. **Results.** For 500 ms after results appear, Enter alone is ignored and stray letters are swallowed, so keys still in flight can't skip them. Tab alone no longer restarts a finished test; Tab then Enter within 1 s restarts at once. Esc toggles between the results and the finished text (the `reviewing` class hides the caret) without recomputing anything. The run is saved, the previous best is compared, the badge shows "New PB! +N wpm" or the gap, and both charts render on the next frame (they need the layout to measure width). A new PB turns the badge solid, pulses a soft ring twice and throws ten CSS sparks; with reduced motion only the badge shows. Full-screen confetti stays opt-in.
 5. **History.** The clock button in the top bar (or History on the results, or Settings > Data) opens the last 20 runs across all modes, newest first, with a sparkline of net WPM (oldest to newest, best-beating runs dotted). "Clear history" asks inline before deleting runs and bests.
 
@@ -57,7 +58,8 @@ $$\text{Accuracy} = \frac{K_c}{K_t} \times 100\%$$
 Other rules:
 
 - **Combo**: consecutive correct keystrokes; any incorrect keystroke resets it. Shown from 10 upward; pulses every 25.
-- **Personal best**: highest WPM per mode (text source × duration), only if above 0.
+- **Personal best**: highest WPM per mode, only if above 0. A mode is time × seconds or words × count, with the text (common or silly) and, for common words, the punctuation and numbers toggles; all quotes share one best. Keys look like `words-30`, `words-50w-p-n`, `silly-10w`, `quote`; runs saved before these modes existed have no `mode` field, count as timed, and keep their old keys.
+- **Same scoring everywhere**: every mode uses the same gross/net WPM and accuracy formulas; only $m$ differs (the fixed duration, or first-to-last keystroke for a fixed text).
 - **Ghost pacer**: a dot at character position $\lfloor \text{PB} \cdot 5 \cdot t / 60 \rfloor$, i.e. your best run assumed to be typed at an even pace (an assumption).
 - **Backspace** returns to the previous word only if it has a mistake. `⌥⌫`/`Ctrl⌫` clears a word. Up to 10 extra letters per word are accepted.
 
@@ -76,7 +78,7 @@ Other rules:
 
 ## Testing
 
-- `npm test` runs `node --test` over `tests/`: scoring formulas, clock start/stop, combo, backspace rules, extra-letter cap, word supply, word streams, and storage (bests per mode, PB flag, recent order, clearing; Node has no `localStorage`, so this also covers the in-memory fallback).
+- `npm test` runs `node --test` over `tests/`: scoring formulas, clock start/stop, fixed-text endings and timing, combo, backspace rules, extra-letter cap, word supply, word streams, punctuation and numbers toggles, quote list, and storage (mode keys, bests per mode, PB flag, recent order, clearing; Node has no `localStorage`, so this also covers the in-memory fallback).
 - Manual: [MANUAL-REVIEW.md](MANUAL-REVIEW.md) covers feel, smoothness, dark mode and devices.
 - `npm run profile -- <wpm>` types a 15s test in headless Chrome with trusted key events and reports frame times, key-to-frame latency, caret lag, long tasks and layout shift. Results on 2026-10-23 (Chrome 156, MacBook):
 

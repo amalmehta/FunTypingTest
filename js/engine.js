@@ -4,11 +4,14 @@ import { countChars, grossWpm, netWpm, accuracy } from "./stats.js";
 export const MAX_EXTRA_LETTERS = 10;
 const WORD_BUFFER = 60; // keep at least this many words ahead of the cursor
 
+// Two shapes: timed ({ nextWord, durationMs }) runs an endless stream until time is up;
+// fixed ({ words }) has no time limit and ends when the last word is typed.
 export class TypingTest {
-  constructor({ nextWord, durationMs }) {
+  constructor({ nextWord, words, durationMs = Infinity }) {
     this.nextWord = nextWord;
-    this.durationMs = durationMs;
-    this.targets = [];
+    this.fixed = Array.isArray(words);
+    this.durationMs = this.fixed ? Infinity : durationMs;
+    this.targets = this.fixed ? words.slice() : [];
     this.typed = [""];
     this.index = 0;
     this.status = "ready"; // ready -> running -> done
@@ -25,6 +28,7 @@ export class TypingTest {
 
   fill() {
     const added = [];
+    if (this.fixed) return added;
     while (this.targets.length < this.index + WORD_BUFFER) {
       const w = this.nextWord();
       this.targets.push(w);
@@ -44,6 +48,7 @@ export class TypingTest {
       this.index++;
       this.typed[this.index] = "";
       this.fill();
+      if (this.index === this.targets.length) this.finish(now); // a fixed text ends on the space after its last word
       return "word";
     }
     if (input.length >= target.length + MAX_EXTRA_LETTERS) return null;
@@ -51,6 +56,8 @@ export class TypingTest {
     const ok = input.length < target.length && target[input.length] === char;
     this.typed[this.index] = input + char;
     this.key(ok, now);
+    // ...or as soon as its last word is typed exactly, with no space needed.
+    if (this.fixed && this.index === this.targets.length - 1 && this.typed[this.index] === target) this.finish(now);
     return ok ? "correct" : "incorrect";
   }
 
@@ -90,26 +97,36 @@ export class TypingTest {
   tick(now) {
     if (this.status !== "running") return;
     const elapsed = Math.min(now - this.startedAt, this.durationMs);
-    while ((this.samples.length + 1) * 1000 <= elapsed) {
-      const second = this.samples.length + 1;
-      const c = countChars(this.targets, this.typed, this.index);
-      this.samples.push({
-        second,
-        wpm: netWpm(c.typed, c.errors, second * 1000),
-        gross: grossWpm(c.typed, second * 1000),
-        errors: this.errorsThisSecond,
-      });
-      this.errorsThisSecond = 0;
-    }
+    while ((this.samples.length + 1) * 1000 <= elapsed) this.sample((this.samples.length + 1) * 1000);
     if (now - this.startedAt >= this.durationMs) {
       this.status = "done";
       this.endedAt = this.startedAt + this.durationMs;
     }
   }
 
+  sample(ms) {
+    const c = countChars(this.targets, this.typed, this.index);
+    this.samples.push({
+      second: Math.round(ms / 100) / 10,
+      wpm: netWpm(c.typed, c.errors, ms),
+      gross: grossWpm(c.typed, ms),
+      errors: this.errorsThisSecond,
+    });
+    this.errorsThisSecond = 0;
+  }
+
+  // Ends a fixed text at the last keystroke; the final part-second gets its own sample.
+  finish(now) {
+    this.tick(now);
+    const ms = now - this.startedAt;
+    if (ms > (this.samples.at(-1)?.second ?? 0) * 1000) this.sample(ms);
+    this.status = "done";
+    this.endedAt = now;
+  }
+
   elapsed(now) {
     if (this.status === "ready") return 0;
-    if (this.status === "done") return this.durationMs;
+    if (this.status === "done") return this.endedAt - this.startedAt;
     return Math.min(now - this.startedAt, this.durationMs);
   }
 

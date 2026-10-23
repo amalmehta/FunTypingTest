@@ -11,8 +11,8 @@ test("personal bests are per mode, and only a run that beats one is flagged", ()
   assert.equal(store.addRun(run(40)).wpm, 50);
   assert.equal(store.addRun(run(60)).wpm, 50);
   assert.equal(store.addRun(run(30, "silly")), null);
-  assert.equal(store.best(modeKey("words", 30)).wpm, 60);
-  assert.equal(store.best(modeKey("silly", 30)).wpm, 30);
+  assert.equal(store.best(modeKey({ source: "words", duration: 30 })).wpm, 60);
+  assert.equal(store.best(modeKey({ source: "silly", duration: 30 })).wpm, 30);
   assert.deepEqual(store.recent(20).map((r) => !!r.pb), [false, false, true, false]);
 });
 
@@ -29,5 +29,17 @@ test("clearing removes runs and bests", () => {
   store.addRun(run(70));
   store.clearHistory();
   assert.equal(store.count(), 0);
-  assert.equal(store.best(modeKey("words", 30)), null);
+  assert.equal(store.best(modeKey({ source: "words", duration: 30 })), null);
+});
+
+test("every mode and toggle has its own key, and old timed runs keep theirs", () => {
+  assert.equal(modeKey({ source: "words", duration: 30 }), "words-30"); // saved before modes existed
+  assert.equal(modeKey({ mode: "time", source: "words", duration: 120, punctuation: true }), "words-120-p");
+  assert.equal(modeKey({ mode: "words", source: "words", wordCount: 50, numbers: true }), "words-50w-n");
+  assert.equal(modeKey({ mode: "words", source: "silly", wordCount: 10, punctuation: true }), "silly-10w"); // toggles don't apply
+  assert.equal(modeKey({ mode: "quote" }), "quote");
+  store.clearHistory();
+  store.addRun({ ...run(40), mode: "words", wordCount: 25 });
+  assert.equal(store.best(modeKey({ source: "words", duration: 30 })), null);
+  assert.equal(store.best("words-25w").wpm, 40);
 });

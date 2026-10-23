@@ -35,7 +35,12 @@ It types a 15-second test at 120 WPM and prints frame times, key latency and car
 ## Use it
 
 - **Start**: just type. The clock starts on your first letter.
-- **Pick a mode**: 15s / 30s / 60s, and *Words* (the 100 most common English words) or *Silly sentences*. Each combination has its own personal best.
+- **Pick a mode** in the bar above the text. Changing anything there starts a fresh test, and the app remembers your last choice.
+  - *time*: 15, 30, 60 or 120 seconds of endless text.
+  - *words*: type 10, 25, 50 or 100 words; the clock runs from your first key to your last.
+  - *quote*: one of 56 short public-domain quotes, with who said it shown on the results.
+  - For time and words: *common* (220 everyday English words) or *silly* sentences. With common words you can add **@ punctuation** (capitals, commas, quotes, end marks) and **# numbers**.
+  - Every combination has its own personal best; all quotes share one.
 - **Restart**: `Tab` or `Esc` mid-test. When a test is done, `Tab`+`Enter` (or the Restart button, or `Enter` alone) starts the next one.
 - **Results**: net WPM, accuracy, raw WPM, character counts, duration, and WPM per second with red dots where you made mistakes. `Esc` flips between the results and your finished text.
 - **Fix mistakes**: `Backspace`; you can go back into the previous word only if it has a mistake. `⌥⌫` (Ctrl+Backspace) clears the word.
